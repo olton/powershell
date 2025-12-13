@@ -1,19 +1,59 @@
 function init { git init }
 function status { git status }
-function add { git add . }
+function add($file = '.') { git add $file }
 function fetch { git fetch --all }
 function fetch-prune { git fetch --all --prune }
 function fetch-prune-all { git fetch --all --prune --prune-tags }
 function branch { git branch }
 function diff { git diff }
 function pull { git pull }
-function switch($branch){ git checkout $branch }
-function del($branch){ git branch -D $branch }
+function checkout($branch){ git checkout $branch }
+function del-branch($branch){ git branch -D $branch }
 function del-remote($branch, $remote = "origin"){ git push $remote --delete $branch }
 function clean { git clean -fd }
 function reset { git reset }
 function reset-hard { git reset --hard HEAD}
 function unindex ($name) { git rm -rf --cached $name }
+
+function update {
+    param (
+        [string]$branch
+    )
+    
+    $branchExists = git branch --list $branch
+    
+    if ($branchExists) {
+        git pull origin $branch
+    } else {
+        Write-Host "Branch '$branch' does not exist locally."
+    }
+}
+
+function update-from {
+    param (
+        [string]$branch
+    )
+    
+    $branchExists = git branch --list $branch
+    $currentBranch = git rev-parse --abbrev-ref HEAD
+    
+    if ($branchExists && $branch -ne $currentBranch) {
+        git pull origin $branch
+        git merge $branch
+    } else {
+        Write-Host "Nothing to update!"
+    }    
+}
+
+
+function set-upstream {
+	param (
+	  [string]$branch,
+	  [string]$origin = 'origin'
+	)
+	
+	git push --set-upstream $origin $branch
+}
 
 function clone ($repository, $target, $depth = 0) { 
     if ($depth -gt 0) {
@@ -23,7 +63,7 @@ function clone ($repository, $target, $depth = 0) {
     }
 }
 
-function rename($newName, $oldName) {
+function rename($oldName, $newName) {
     git branch -m $oldName $newName
 }
 
