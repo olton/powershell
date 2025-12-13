@@ -7,10 +7,9 @@ Set-Alias -Name which -Value search
 function search {
     param (
         [string]$path,
-        [string]$file,
-        [switch]$r
+        [string]$file
     )
-    Get-ChildItem -Path $path -Recurse:$r -Force -Include "*$file*" -ErrorAction SilentlyContinue
+    Get-ChildItem -Path $path -Recurse -Force -Include "*$file*" -ErrorAction SilentlyContinue
 }
 
 function ls($path) { 
@@ -155,4 +154,13 @@ function Format-Size {
     } else {
         return "{0} B" -f $bytes
     }
+}
+
+function rn {
+	param (
+		[string]$path,
+		[string]$newName
+	)
+	
+	Rename-Item -Path $path -NewName $newName
 }
