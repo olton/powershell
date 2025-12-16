@@ -1,3 +1,4 @@
+# Git helper functions
 function init { git init }
 function status { git status }
 function add($file = '.') { git add $file }
@@ -17,34 +18,36 @@ function unindex ($name) { git rm -rf --cached $name }
 
 function update {
     param (
-        [string]$branch
+        [string]$branch = ''
     )
     
+    if (-not $branch -or $branch.Trim() -eq '') {
+        Write-Host "Pulling latest changes for current branch" -ForegroundColor Cyan
+        pull
+        return
+    }
+
+    $currentBranch = git rev-parse --abbrev-ref HEAD
     $branchExists = git branch --list $branch
     
     if ($branchExists) {
+        Write-Host "Switching to branch '$branch'..." -ForegroundColor Cyan
+        git checkout $branch
+        
+        Write-Host "Pulling latest changes from '$branch'..." -ForegroundColor Cyan
         git pull origin $branch
+        
+        Write-Host "Switching back to '$currentBranch'..." -ForegroundColor Cyan
+        git checkout $currentBranch
+        
+        Write-Host "Merging '$branch' into '$currentBranch'..." -ForegroundColor Cyan
+        git merge $branch
+        
+        Write-Host "Done!" -ForegroundColor Green
     } else {
-        Write-Host "Branch '$branch' does not exist locally."
+        Write-Host "Branch '$branch' does not exist locally." -ForegroundColor Red
     }
 }
-
-function update-from {
-    param (
-        [string]$branch
-    )
-    
-    $branchExists = git branch --list $branch
-    $currentBranch = git rev-parse --abbrev-ref HEAD
-    
-    if ($branchExists && $branch -ne $currentBranch) {
-        git pull origin $branch
-        git merge $branch
-    } else {
-        Write-Host "Nothing to update!"
-    }    
-}
-
 
 function set-upstream {
 	param (
