@@ -8,13 +8,50 @@ function fetch-prune-all { git fetch --all --prune --prune-tags }
 function branch { git branch }
 function diff { git diff }
 function pull { git pull }
-function checkout($branch){ git checkout $branch }
 function del-branch($branch){ git branch -D $branch }
 function del-remote($branch, $remote = "origin"){ git push $remote --delete $branch }
 function clean { git clean -fd }
 function reset { git reset }
 function reset-hard { git reset --hard HEAD}
 function unindex ($name) { git rm -rf --cached $name }
+
+function checkout { 
+    param (
+        [string]$branch
+    )
+
+    $branchExists = git branch --list $branch
+
+    if (-not $branchExists -or $branchExists.Trim() -eq '') {
+        Write-Host "Branch '$branch' does not exist locally. Searching for similar branches..." -ForegroundColor Magenta
+        $matchingBranches = @(git branch --list "*$branch*" | ForEach-Object { $_.Trim().TrimStart('* ') } | Where-Object { $_ -ne '' })
+        
+        if ($matchingBranches.Count -eq 1) {
+            Write-Host "Found one matching branch: '$($matchingBranches[0])'. Checking out..." -ForegroundColor Green
+            $branch = $matchingBranches[0]
+        } elseif ($matchingBranches.Count -gt 1) {
+            Write-Host "Found multiple branches matching '$branch':" -ForegroundColor Yellow
+            $matchingBranches | ForEach-Object {
+                Write-Host "checkout $_" -ForegroundColor Cyan
+            }
+            return
+        } else {
+            Write-Host "Branch '$branch' does not exist locally. Fetching from remote..." -ForegroundColor Cyan
+            git fetch origin $branch 2>$null
+            $branchExists = git branch --list $branch
+            if (-not $branchExists -or $branchExists.Trim() -eq '') {
+                Write-Host "Branch '$branch' does not exist on remote either!" -ForegroundColor Red
+                return
+            } else {
+                Write-Host "Branch '$branch' found on remote. Checking out..." -ForegroundColor Green
+                git checkout $branch
+                return
+            }
+        }
+    }
+
+    git checkout $branch 
+}
 
 function update {
     param (
@@ -191,3 +228,4 @@ function review {
         Write-Host "Source branch $From doesn't exist."
     }
 }
+
