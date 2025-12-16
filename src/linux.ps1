@@ -1,8 +1,10 @@
+# Shell functions from linux
+
+Set-Alias -Name which -Value search
+
 Remove-Alias -Name pwd -Force -ErrorAction SilentlyContinue
 Remove-Alias -Name cat -Force -ErrorAction SilentlyContinue
 Remove-Alias -Name ls -Force -ErrorAction SilentlyContinue
-
-Set-Alias -Name which -Value search
 
 function search {
     param (
@@ -140,4 +142,27 @@ function df {
     $results | Format-Table -AutoSize
 }
 
+function Format-Size {
+    param([long]$bytes)
+    
+    if ($bytes -ge 1TB) {
+        return "{0:F1} TB" -f ($bytes / 1TB)
+    } elseif ($bytes -ge 1GB) {
+        return "{0:F1} GB" -f ($bytes / 1GB)
+    } elseif ($bytes -ge 1MB) {
+        return "{0:F1} MB" -f ($bytes / 1MB)
+    } elseif ($bytes -ge 1KB) {
+        return "{0:F1} KB" -f ($bytes / 1KB)
+    } else {
+        return "{0} B" -f $bytes
+    }
+}
 
+function rn {
+	param (
+		[string]$path,
+		[string]$newName
+	)
+	
+	Rename-Item -Path $path -NewName $newName
+}

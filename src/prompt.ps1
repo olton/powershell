@@ -8,7 +8,12 @@ function prompt {
     $nodeVersion = (node -v).Trim()
     $packageJson = Test-Path package.json -PathType Leaf
     $currentTime = $(Get-Date -Format "dddd dd-MM-yyyy HH:mm")
+    $currentBranchIsModified = $false
 
+    $status = git status --porcelain 2>$null
+    if ($status -and $status.Trim()) {
+        $currentBranchIsModified = $true
+    }
 
     if ($Env:SHOW_PROMPT_TIME -eq "YES") {
         if ($uptime) {
@@ -24,6 +29,9 @@ function prompt {
 
     if ($currentBranch) {
         Write-Host "🌵 $currentBranch " -NoNewLine -ForegroundColor White
+        if ($currentBranchIsModified) {
+            Write-Host "[M]" -NoNewLine -ForegroundColor Red
+        }
     }
 
     if ($packageJson) {

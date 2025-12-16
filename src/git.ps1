@@ -1,6 +1,7 @@
+# Git helper functions
 function init { git init }
 function status { git status }
-function add { git add . }
+function add($file = '.') { git add $file }
 function fetch { git fetch --all }
 function fetch-prune { git fetch --all --prune }
 function fetch-prune-all { git fetch --all --prune --prune-tags }
@@ -8,13 +9,92 @@ function branch { git branch }
 function branch-remote { git branch -r }
 function diff { git diff }
 function pull { git pull }
-function switch($branch){ git checkout $branch }
-function del($branch){ git branch -D $branch }
+function del-branch($branch){ git branch -D $branch }
 function del-remote($branch, $remote = "origin"){ git push $remote --delete $branch }
 function clean { git clean -fd }
 function reset { git reset }
 function reset-hard { git reset --hard HEAD}
 function unindex ($name) { git rm -rf --cached $name }
+
+function checkout { 
+    param (
+        [string]$branch
+    )
+
+    $branchExists = git branch --list $branch
+
+    if (-not $branchExists -or $branchExists.Trim() -eq '') {
+        Write-Host "Branch '$branch' does not exist locally. Searching for similar branches..." -ForegroundColor Magenta
+        $matchingBranches = @(git branch --list "*$branch*" | ForEach-Object { $_.Trim().TrimStart('* ') } | Where-Object { $_ -ne '' })
+        
+        if ($matchingBranches.Count -eq 1) {
+            Write-Host "Found one matching branch: '$($matchingBranches[0])'. Checking out..." -ForegroundColor Green
+            $branch = $matchingBranches[0]
+        } elseif ($matchingBranches.Count -gt 1) {
+            Write-Host "Found multiple branches matching '$branch':" -ForegroundColor Yellow
+            $matchingBranches | ForEach-Object {
+                Write-Host "checkout $_" -ForegroundColor Cyan
+            }
+            return
+        } else {
+            Write-Host "Branch '$branch' does not exist locally. Fetching from remote..." -ForegroundColor Cyan
+            git fetch origin $branch 2>$null
+            $branchExists = git branch --list $branch
+            if (-not $branchExists -or $branchExists.Trim() -eq '') {
+                Write-Host "Branch '$branch' does not exist on remote either!" -ForegroundColor Red
+                return
+            } else {
+                Write-Host "Branch '$branch' found on remote. Checking out..." -ForegroundColor Green
+                git checkout $branch
+                return
+            }
+        }
+    }
+
+    git checkout $branch 
+}
+
+function update {
+    param (
+        [string]$branch = ''
+    )
+    
+    if (-not $branch -or $branch.Trim() -eq '') {
+        Write-Host "Pulling latest changes for current branch" -ForegroundColor Cyan
+        pull
+        return
+    }
+
+    $currentBranch = git rev-parse --abbrev-ref HEAD
+    $branchExists = git branch --list $branch
+    
+    if ($branchExists) {
+        Write-Host "Switching to branch '$branch'..." -ForegroundColor Cyan
+        git checkout $branch
+        
+        Write-Host "Pulling latest changes from '$branch'..." -ForegroundColor Cyan
+        git pull origin $branch
+        
+        Write-Host "Switching back to '$currentBranch'..." -ForegroundColor Cyan
+        git checkout $currentBranch
+        
+        Write-Host "Merging '$branch' into '$currentBranch'..." -ForegroundColor Cyan
+        git merge $branch
+        
+        Write-Host "Done!" -ForegroundColor Green
+    } else {
+        Write-Host "Branch '$branch' does not exist locally." -ForegroundColor Red
+    }
+}
+
+function set-upstream {
+	param (
+	  [string]$branch,
+	  [string]$origin = 'origin'
+	)
+	
+	git push --set-upstream $origin $branch
+}
 
 function clone ($repository, $target, $depth = 0) { 
     if ($depth -gt 0) {
@@ -24,7 +104,7 @@ function clone ($repository, $target, $depth = 0) {
     }
 }
 
-function rename($newName, $oldName) {
+function rename($oldName, $newName) {
     git branch -m $oldName $newName
 }
 
@@ -149,3 +229,4 @@ function review {
         Write-Host "Source branch $From doesn't exist."
     }
 }
+
