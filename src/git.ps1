@@ -5,6 +5,7 @@ function fetch { git fetch --all }
 function fetch-prune { git fetch --all --prune }
 function fetch-prune-all { git fetch --all --prune --prune-tags }
 function branch { git branch }
+function branch-remote { git branch -r }
 function diff { git diff }
 function pull { git pull }
 function switch($branch){ git checkout $branch }
