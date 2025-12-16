@@ -1,8 +1,10 @@
+# Shell functions from linux
+
+Set-Alias -Name which -Value search
+
 Remove-Alias -Name pwd -Force -ErrorAction SilentlyContinue
 Remove-Alias -Name cat -Force -ErrorAction SilentlyContinue
 Remove-Alias -Name ls -Force -ErrorAction SilentlyContinue
-
-Set-Alias -Name which -Value search
 
 function search {
     param (
