@@ -30,12 +30,12 @@ function prompt {
     if ($currentBranch) {
         Write-Host "🌵 $currentBranch" -NoNewLine -ForegroundColor White
         if ($currentBranchIsModified) {
-            Write-Host "[M] " -NoNewLine -ForegroundColor Red
+            Write-Host "[M]" -NoNewLine -ForegroundColor Red
         }
     }
 
     if ($packageJson) {
-        Write-Host "[👽 $nodeVersion] " -NoNewLine -ForegroundColor Green
+        Write-Host " [👽 $nodeVersion] " -NoNewLine -ForegroundColor Green
     }
 
     Write-Host ""
