@@ -10,6 +10,5 @@
     "type": "git",
     "url": "https://github.com/olton/powershell.git"
   },
-  "private": true,
-  "target": "C:\\Users\\serhi\\OneDrive\\Документи\\PowerShell\\"
+  "private": true
 }

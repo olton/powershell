@@ -28,9 +28,9 @@ function prompt {
     Write-Host "📂 $folder " -NoNewLine -ForegroundColor Green
 
     if ($currentBranch) {
-        Write-Host "🌵 $currentBranch " -NoNewLine -ForegroundColor White
+        Write-Host "🌵 $currentBranch" -NoNewLine -ForegroundColor White
         if ($currentBranchIsModified) {
-            Write-Host "[M]" -NoNewLine -ForegroundColor Red
+            Write-Host "[M] " -NoNewLine -ForegroundColor Red
         }
     }
 

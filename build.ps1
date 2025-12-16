@@ -1,5 +1,24 @@
-$package = Get-Content -Path "package.json" | ConvertFrom-Json
-$dist = $package.target
+$envFile = ".env"
+$target = $null
+
+if (Test-Path -Path $envFile)
+{
+    Get-Content -Path $envFile | ForEach-Object {
+        if ($_ -match "^\s*TARGET\s*=\s*(.+)$")
+        {
+            $target = $matches[1].Trim().Trim('"').Trim("'")
+        }
+    }
+}
+
+if (-not $target)
+{
+    Write-Host "TARGET not found in .env file, falling back to package.json" -ForegroundColor Yellow
+    $package = Get-Content -Path "package.json" | ConvertFrom-Json
+    $target = $package.target
+}
+
+$dist = $target
 $profile = Join-Path -Path $dist -ChildPath "Microsoft.PowerShell_profile.ps1"
 
 # Перевіряємо, чи існує тека dist, якщо ні - створюємо
