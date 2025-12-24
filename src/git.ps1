@@ -58,9 +58,11 @@ function checkout {
             $branch = $matchingBranches[0]
         } elseif ($matchingBranches.Count -gt 1) {
             Write-Host "Found multiple branches matching '$branch':" -ForegroundColor Yellow
+            Write-Host " "
             $matchingBranches | ForEach-Object {
                 Write-Host "checkout $_" -ForegroundColor Cyan
             }
+            Write-Host " "
             return
         } else {
             Write-Host "Branch '$branch' does not exist locally. Fetching from remote..." -ForegroundColor Cyan
@@ -81,6 +83,7 @@ function checkout {
         }
     }
 
+    Write-Host "Checking out branch '$branch'..." -ForegroundColor Magenta
     git checkout $branch 
 }
 
@@ -285,3 +288,4 @@ function review {
         Write-Host "Source branch $From doesn't exist."
     }
 }
+
