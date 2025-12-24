@@ -16,6 +16,33 @@ function reset { git reset }
 function reset-hard { git reset --hard HEAD}
 function unindex ($name) { git rm -rf --cached $name }
 
+# Check function to verify if the remote repository is reachable
+function check {
+    param (
+        [string]$remote = "origin"
+    )
+
+    $remoteUrl = git config --get "remote.$remote.url"
+    if (-not $remoteUrl -or $remoteUrl.Trim() -eq '') {
+        Write-Host "Remote url is not set for '$remote'!" -ForegroundColor Red
+        return
+    }
+
+    Write-Host "Checking remote '$remoteUrl'..." -ForegroundColor Cyan
+
+    git ls-remote --exit-code -h "$remoteUrl" | Out-Null
+    $code = $LASTEXITCODE
+
+    if ($code -eq 0) {
+        Write-Host "✅ Success: The remote server is online and reachable." -ForegroundColor Green
+    } else {
+        Write-Host "❌ Error: Could not reach the remote server." -ForegroundColor Red
+    }
+
+    return $code
+}
+
+# Enhanced checkout function with branch existence check and suggestions
 function checkout { 
     param (
         [string]$branch
@@ -87,7 +114,7 @@ function update {
     }
 }
 
-function set-upstream {
+function upstream {
 	param (
 	  [string]$branch,
 	  [string]$origin = 'origin'
@@ -229,4 +256,5 @@ function review {
         Write-Host "Source branch $From doesn't exist."
     }
 }
+
 
