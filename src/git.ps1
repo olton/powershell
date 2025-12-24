@@ -6,7 +6,6 @@ function fetch { git fetch --all }
 function fetch-prune { git fetch --all --prune }
 function fetch-prune-all { git fetch --all --prune --prune-tags }
 function branch { git branch }
-function branch-remote { git branch -r }
 function diff { git diff }
 function pull { git pull }
 function del-branch($branch){ git branch -D $branch }
@@ -65,6 +64,10 @@ function checkout {
             return
         } else {
             Write-Host "Branch '$branch' does not exist locally. Fetching from remote..." -ForegroundColor Cyan
+            if (check -ne 0) {
+                Write-Host "Remote is not reachable. Cannot fetch branch." -ForegroundColor Red
+                return
+            }
             git fetch origin $branch 2>$null
             $branchExists = git branch --list $branch
             if (-not $branchExists -or $branchExists.Trim() -eq '') {
@@ -81,11 +84,18 @@ function checkout {
     git checkout $branch 
 }
 
+# Update function to pull latest changes from a specified branch and merge into current branch
+# If no branch is specified, it pulls latest changes for the current branch
 function update {
     param (
         [string]$branch = ''
     )
     
+    if (check -ne 0) {
+        Write-Host "Remote is not reachable. Update aborted." -ForegroundColor Red
+        return
+    }
+
     if (-not $branch -or $branch.Trim() -eq '') {
         Write-Host "Pulling latest changes for current branch" -ForegroundColor Cyan
         pull
@@ -120,6 +130,11 @@ function upstream {
 	  [string]$origin = 'origin'
 	)
 	
+    if (check $origin -ne 0) {
+        Write-Host "Cannot set upstream because remote '$origin' is not reachable." -ForegroundColor Red
+        return
+    }
+
 	git push --set-upstream $origin $branch
 }
 
@@ -161,6 +176,11 @@ function push {
         [string]$Message,
         [string]$Remote = "origin"
     )
+
+    if (check $Remote -ne 0) {
+        Write-Host "Cannot push because remote '$Remote' is not reachable." -ForegroundColor Red
+        return
+    }
 
     $branchName = git rev-parse --abbrev-ref HEAD
 
@@ -214,7 +234,10 @@ function new {
 
     if ($branchExists) {
         git checkout $From
-        git pull
+        if (check -eq 0) {
+            Write-Host "Remote is reachable. Pulling latest changes from '$From'..." -ForegroundColor Cyan
+            git pull
+        }
         git checkout -b $Name
     } else {
         Write-Host "Source branch $From doesn't exist."
@@ -232,7 +255,10 @@ function feature {
     if ($branchExists) {
         $new_branch = "feature/" + $Name 
         git checkout $From
-        git pull
+        if (check -eq 0) {
+            Write-Host "Remote is reachable. Pulling latest changes from '$From'..." -ForegroundColor Cyan
+            git pull
+        }
         git checkout -b $new_branch
     } else {
         Write-Host "Source branch $From doesn't exist."
@@ -250,11 +276,12 @@ function review {
     if ($branchExists) {
         $new_branch = "review/" + $Name 
         git checkout $From
-        git pull
+        if (check -eq 0) {
+            Write-Host "Remote is reachable. Pulling latest changes from '$From'..." -ForegroundColor Cyan
+            git pull
+        }
         git checkout -b $new_branch
     } else {
         Write-Host "Source branch $From doesn't exist."
     }
 }
-
-
