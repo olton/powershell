@@ -14,9 +14,22 @@ function search {
     Get-ChildItem -Path $path -Recurse -Force -Include "*$file*" -ErrorAction SilentlyContinue
 }
 
-function ls($path) { 
-    Get-ChildItem -Name -Path $path -ErrorAction SilentlyContinue
- }
+function ls { 
+    param (
+        [string]$path = ".",
+        [string]$pattern = "*",
+        [switch]$r
+    )
+
+    Get-ChildItem -Name -Path $path -Filter $pattern -ErrorAction SilentlyContinue | ForEach-Object {
+        $item = Get-Item -Path (Join-Path -Path $path -ChildPath $_) -ErrorAction SilentlyContinue
+        if ($item) {
+            $isDir = $item.PSIsContainer
+            $color = if ($isDir) { "Cyan" } else { "White" }
+            Write-Host "$_ " -ForegroundColor $color -NoNewLine:(-not $r)
+        }
+    }
+}
 
 function la($path = ".", $pattern) { 
     Get-ChildItem -Path $path -Filter $pattern -ErrorAction SilentlyContinue
@@ -166,3 +179,4 @@ function rn {
 	
 	Rename-Item -Path $path -NewName $newName
 }
+
