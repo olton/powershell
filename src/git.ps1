@@ -15,6 +15,60 @@ function reset { git reset }
 function reset-hard { git reset --hard HEAD}
 function unindex ($name) { git rm -rf --cached $name }
 
+function list {
+    param (
+        [string]$branch
+    )
+
+    Write-Host "Searching for similar branches for '$branch'... " -NoNewLine
+    $matchingBranches = @(git branch --list "*$branch*" | ForEach-Object { $_.Trim().TrimStart('* ') } | Where-Object { $_ -ne '' })
+    
+    if ($matchingBranches.Count -eq 1) {
+        Write-Host "Found one matching branch!" -ForegroundColor Magenta
+        Write-Host " "
+        Write-Host "$($matchingBranches[0])" -ForegroundColor Green
+        Write-Host " "
+    } elseif ($matchingBranches.Count -gt 1) {
+        Write-Host "Found multiple branches matching!" -ForegroundColor Yellow
+        Write-Host " "
+        $matchingBranches | ForEach-Object {
+            Write-Host "$_" -ForegroundColor Cyan
+        }
+        Write-Host " "
+        return
+    }
+}
+
+function list-remote {
+    param (
+        [string]$branch,
+        [string]$remote = "origin"
+    )
+
+    if (check $remote -ne 0) {
+        Write-Host "Remote '$remote' is not reachable." -ForegroundColor Red
+        return
+    }
+
+    Write-Host "Searching for similar remote branches for '$branch'... " -NoNewLine
+    $matchingBranches = @(git ls-remote --heads $remote "*$branch*" | ForEach-Object { ($_ -split "`t")[1].Replace("refs/heads/", "").Trim() } | Where-Object { $_ -ne '' })
+    
+    if ($matchingBranches.Count -eq 1) {
+        Write-Host "Found one matching remote branch!" -ForegroundColor Magenta
+        Write-Host " "
+        Write-Host "$($matchingBranches[0])" -ForegroundColor Green
+        Write-Host " "
+    } elseif ($matchingBranches.Count -gt 1) {
+        Write-Host "Found multiple remote branches matching!" -ForegroundColor Yellow
+        Write-Host " "
+        $matchingBranches | ForEach-Object {
+            Write-Host "$_" -ForegroundColor Cyan
+        }
+        Write-Host " "
+        return
+    }
+}
+
 # Check function to verify if the remote repository is reachable
 function check {
     param (
@@ -70,6 +124,7 @@ function checkout {
                 Write-Host "Remote is not reachable. Cannot fetch branch." -ForegroundColor Red
                 return
             }
+            Write-Host "Fetching branch '$branch' from remote..." -ForegroundColor Cyan
             git fetch origin $branch 2>$null
             $branchExists = git branch --list $branch
             if (-not $branchExists -or $branchExists.Trim() -eq '') {
@@ -288,4 +343,3 @@ function review {
         Write-Host "Source branch $From doesn't exist."
     }
 }
-
