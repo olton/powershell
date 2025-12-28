@@ -81,7 +81,8 @@ function check {
         return
     }
 
-    Write-Host "Checking remote '$remoteUrl'..." -ForegroundColor Cyan
+    Write-Host "Checking remote " -NoNewLine
+    Write-Host "$remoteUrl..." -ForegroundColor Cyan
 
     git ls-remote --exit-code -h "$remoteUrl" | Out-Null
     $code = $LASTEXITCODE
@@ -246,7 +247,7 @@ function push {
         return
     }
 
-    Write-Host "Changes found! Start commit and push..." -ForegroundColor Cyan
+    Write-Host "Changes found to commit and push." -ForegroundColor Cyan
 
     if (check $Remote -ne 0) {
         Write-Host " "
@@ -286,6 +287,7 @@ function push {
     Write-Host "Push operation completed." -ForegroundColor Green
     Write-Host " "    
 }
+
 function log($deep = -1) { 
     if ($deep -gt 0) {
         $deep = $deep * -1
@@ -318,18 +320,69 @@ function new {
         [string]$From = "master"
     )
 
+    Write-Host " "
+
+    if (!$Name -or $Name.Trim() -eq '') {
+        Write-Host "Branch name cannot be empty." -ForegroundColor Red
+        Write-Host "Use " -NoNewLine
+        Write-Host "new branch_name [from_branch]" -ForegroundColor Cyan -NoNewLine
+        Write-Host " to create a new branch."
+        return
+    }
+
+    if (exists -Name $Name) {
+        Write-Host "Branch $Name already exists." -ForegroundColor Red
+        return
+    }
+
     $branchExists = (git branch --list | Select-String -Pattern $From -Quiet) 
 
     if ($branchExists) {
+        Write-Host "Source branch $From exists."
+        Write-Host "Checking out to $From..."
         git checkout $From
         if (check -eq 0) {
             Write-Host "Remote is reachable. Pulling latest changes from '$From'..." -ForegroundColor Cyan
             git pull
         }
-        git checkout -b $Name
     } else {
         Write-Host "Source branch $From doesn't exist."
+        Write-Host "Created new branch $Name from current." -ForegroundColor Green
     }
+
+    $null = git checkout -b $Name
+
+    Write-Host " "
+}
+
+function create {
+    param (
+        [string]$Type,
+        [string]$Name,
+        [string]$From = "master"
+    )
+
+    Write-Host " "
+
+    $new_name = "$Type/$Name"
+    $branchExists = (git branch --list | Select-String -Pattern $From -Quiet) 
+
+    if ($branchExists) {
+        Write-Host "Source branch $From exists."
+        Write-Host "Checking out to $From..."
+        git checkout $From
+        if (check -eq 0) {
+            Write-Host "Remote is reachable. Pulling latest changes from '$From'..." -ForegroundColor Cyan
+            git pull
+        }
+    } else {
+        Write-Host "Source branch $From doesn't exist."
+        Write-Host "Created new branch $Name from current." -ForegroundColor Green
+    }
+
+    $null = git checkout -b $Name
+
+    Write-Host " "
 }
 
 function feature { 
@@ -338,19 +391,7 @@ function feature {
         [string]$From = "master"
     )
 
-    $branchExists = (git branch --list | Select-String -Pattern $From -Quiet) 
-
-    if ($branchExists) {
-        $new_branch = "feature/" + $Name 
-        git checkout $From
-        if (check -eq 0) {
-            Write-Host "Remote is reachable. Pulling latest changes from '$From'..." -ForegroundColor Cyan
-            git pull
-        }
-        git checkout -b $new_branch
-    } else {
-        Write-Host "Source branch $From doesn't exist."
-    }
+    create -Type "feature" -Name $Name -From $From
 }
 
 function review { 
@@ -359,18 +400,14 @@ function review {
         [string]$From = "master"
     )
 
-    $branchExists = (git branch --list | Select-String -Pattern $From -Quiet) 
-
-    if ($branchExists) {
-        $new_branch = "review/" + $Name 
-        git checkout $From
-        if (check -eq 0) {
-            Write-Host "Remote is reachable. Pulling latest changes from '$From'..." -ForegroundColor Cyan
-            git pull
-        }
-        git checkout -b $new_branch
-    } else {
-        Write-Host "Source branch $From doesn't exist."
-    }
+    create -Type "review" -Name $Name -From $From
 }
 
+function hotfix { 
+    param (
+        [string]$Name,
+        [string]$From = "master"
+    )
+
+    create -Type "hotfix" -Name $Name -From $From
+}
