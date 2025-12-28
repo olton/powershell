@@ -41,4 +41,5 @@ foreach ($file in $files) {
     Add-Content -Path $profile -Value $content
 }
 
-Write-Host "Профіль успішно зібрано: $profile" -ForegroundColor Green
+Write-Host "Профіль успішно зібрано: "
+Write-Host "$profile" -ForegroundColor Green
