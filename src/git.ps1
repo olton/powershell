@@ -246,7 +246,7 @@ function push {
         return
     }
 
-    Write-Host "Changes found to commit and push." -ForegroundColor Cyan
+    Write-Host "Changes found! Start commit and push..." -ForegroundColor Cyan
 
     if (check $Remote -ne 0) {
         Write-Host " "
