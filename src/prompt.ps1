@@ -1,3 +1,5 @@
+# Custom Prompt
+# Set to "YES" to show time in prompt, "NO" to hide
 $Env:SHOW_PROMPT_TIME = "NO"
 
 function prompt {
@@ -10,8 +12,11 @@ function prompt {
     $currentTime = $(Get-Date -Format "dddd dd-MM-yyyy HH:mm")
     $currentBranchIsModified = $false
 
-    $status = git status --porcelain 2>$null
-    if ($status -and $status.Trim()) {
+    $gitStatus = git status --porcelain 2>$null
+    $countModifiedFiles = (git status -s | Measure-Object -Line).Lines
+    $modifiedInfo = git diff --shortstat
+
+    if ($gitStatus -and $gitStatus.Trim()) {
         $currentBranchIsModified = $true
     }
 
@@ -30,7 +35,7 @@ function prompt {
     if ($currentBranch) {
         Write-Host "🌵 $currentBranch" -NoNewLine -ForegroundColor White
         if ($currentBranchIsModified) {
-            Write-Host "[M]" -NoNewLine -ForegroundColor Red
+            Write-Host " [M:$countModifiedFiles]" -NoNewLine -ForegroundColor Red
         }
     }
 
