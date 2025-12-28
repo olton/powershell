@@ -247,11 +247,11 @@ function push {
         return
     }
 
-    Write-Host "Changes found to commit and push." -ForegroundColor Cyan
+    Write-Host "Changes found. Starting commit and push..." -ForegroundColor Cyan
 
     if (check $Remote -ne 0) {
         Write-Host " "
-        Write-Host "Cannot push because remote '$Remote' is not reachable." -ForegroundColor Red
+        Write-Host "Cannot push, because remote '$Remote' is not reachable." -ForegroundColor Red
         Write-Host " "
         return
     }
@@ -259,7 +259,7 @@ function push {
     Write-Host "Getting current branch name..." 
     $branchName = git rev-parse --abbrev-ref HEAD
 
-    Write-Host "Current branch: " -NoNewLine
+    Write-Host "Current branch is: " -NoNewLine
     Write-Host $branchName -ForegroundColor Yellow
 
     Write-Host "Preparing to push changes to remote '$Remote'..." -ForegroundColor Cyan
@@ -327,15 +327,24 @@ function new {
         Write-Host "Use " -NoNewLine
         Write-Host "new branch_name [from_branch]" -ForegroundColor Cyan -NoNewLine
         Write-Host " to create a new branch."
+        Write-Host " "
         return
     }
 
     if (exists -Name $Name) {
         Write-Host "Branch $Name already exists." -ForegroundColor Red
+        Write-Host " "
         return
     }
 
-    $branchExists = (git branch --list | Select-String -Pattern $From -Quiet) 
+    if ($From -eq $Name) {
+        Write-Host "Source branch and new branch name cannot be the same." -ForegroundColor Red
+        Write-Host " "
+        return
+    }
+
+    $null = fetch
+    $branchExists = (git branch --list | Select-String -Pattern $From -Quiet) # "^\*?\s*$From$"
 
     if ($branchExists) {
         Write-Host "Source branch $From exists."
@@ -351,6 +360,7 @@ function new {
     }
 
     $null = git checkout -b $Name
+    Write-Host "Branch $Name created successfully." -ForegroundColor Green
 
     Write-Host " "
 }
@@ -365,22 +375,25 @@ function create {
     Write-Host " "
 
     $new_name = "$Type/$Name"
-    $branchExists = (git branch --list | Select-String -Pattern $From -Quiet) 
+    $null = fetch
+    $branchExists = (git branch --list | Select-String -Pattern $From -Quiet) # "^\*?\s*$From$"
 
     if ($branchExists) {
         Write-Host "Source branch $From exists."
+        Write-Host "Creating new branch $new_name from $From..." -ForegroundColor Cyan
         Write-Host "Checking out to $From..."
         git checkout $From
         if (check -eq 0) {
-            Write-Host "Remote is reachable. Pulling latest changes from '$From'..." -ForegroundColor Cyan
+            Write-Host "Remote is reachable. Pulling latest changes from '$From'..." -ForegroundColor Yellow
             git pull
         }
     } else {
         Write-Host "Source branch $From doesn't exist."
-        Write-Host "Created new branch $Name from current." -ForegroundColor Green
+        Write-Host "Creating new branch $new_name from current." -ForegroundColor Magenta
     }
 
-    $null = git checkout -b $Name
+    $null = git checkout -b $new_name
+    Write-Host "Branch $new_name created successfully." -ForegroundColor Green
 
     Write-Host " "
 }
@@ -410,4 +423,30 @@ function hotfix {
     )
 
     create -Type "hotfix" -Name $Name -From $From
+}
+
+function release { 
+    param (
+        [string]$Name,
+        [string]$From = "master"
+    )
+
+    create -Type "release" -Name $Name -From $From
+}
+
+function merge {
+    param (
+        [string]$Source,
+        [string]$Target
+    )
+
+    Write-Host "Merging branch '$Source' into '$Target'..." -ForegroundColor Cyan
+
+    $null = git checkout $Target
+    $null = git pull origin $Target
+
+    $null = git merge $Source
+
+    Write-Host "Merge completed." -ForegroundColor Green
+    Write-Host " "
 }
