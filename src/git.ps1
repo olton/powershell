@@ -235,27 +235,57 @@ function push {
         [string]$Remote = "origin"
     )
 
-    if (check $Remote -ne 0) {
-        Write-Host "Cannot push because remote '$Remote' is not reachable." -ForegroundColor Red
+    Write-Host " "
+
+    $changes = git diff --shortstat
+
+    if (-not $changes -or $changes.Trim() -eq '') {
+        Write-Host " "
+        Write-Host "Tree is clean. No changes to push." -ForegroundColor Yellow
+        Write-Host " "
         return
     }
 
+    Write-Host "Changes found to commit and push." -ForegroundColor Cyan
+
+    if (check $Remote -ne 0) {
+        Write-Host " "
+        Write-Host "Cannot push because remote '$Remote' is not reachable." -ForegroundColor Red
+        Write-Host " "
+        return
+    }
+
+    Write-Host "Getting current branch name..." 
     $branchName = git rev-parse --abbrev-ref HEAD
 
+    Write-Host "Current branch: " -NoNewLine
+    Write-Host $branchName -ForegroundColor Yellow
+
+    Write-Host "Preparing to push changes to remote '$Remote'..." -ForegroundColor Cyan
+    Write-Host "Commit message: " -NoNewLine
+    Write-Host $Message -ForegroundColor Magenta
+    Write-Host "Changes: " -NoNewLine
+    Write-Host ($changes ? $changes : "No changes") -ForegroundColor Magenta
+
+    Write-Host "Adding changes and committing..."
+    $null = git add .
+    $null = git commit -m $Message
+
+    Write-Host "Checking if remote branch '$branchName' exists on '$Remote'..."
     $branchExists = (git ls-remote --heads $Remote $branchName)
 
-    git add .
-    git commit -m $Message
-
     if ($branchExists -and $branchExists.Trim()) {
-        Write-Host "Remote branch $branchName exists." -ForegroundColor Green
-        git push
+        Write-Host "Remote branch $branchName exists. Pushing changes..."
+        git push 2>&1 | Out-Null
     } else {
-        Write-Host "Remote branch $branchName doesn't exists. Creating new remote branch..." -ForegroundColor Green
-        git push -u $Remote $branchName
+        Write-Host "Remote branch $branchName doesn't exists. Creating new remote branch and pushing changes..."
+        $null = git push -u $Remote $branchName
     }
-}
 
+    Write-Host " "    
+    Write-Host "Push operation completed." -ForegroundColor Green
+    Write-Host " "    
+}
 function log($deep = -1) { 
     if ($deep -gt 0) {
         $deep = $deep * -1
@@ -343,3 +373,4 @@ function review {
         Write-Host "Source branch $From doesn't exist."
     }
 }
+
