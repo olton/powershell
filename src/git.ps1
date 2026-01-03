@@ -20,6 +20,7 @@ function list {
         [string]$branch
     )
 
+    Write-Host " "
     Write-Host "Searching for similar branches for '$branch'... " -NoNewLine
     $matchingBranches = @(git branch --list "*$branch*" | ForEach-Object { $_.Trim().TrimStart('* ') } | Where-Object { $_ -ne '' })
     
@@ -36,6 +37,10 @@ function list {
         }
         Write-Host " "
         return
+    } else {
+        Write-Host " "
+        Write-Host "No matching branches found." -ForegroundColor Red
+        Write-Host " "
     }
 }
 
@@ -44,6 +49,8 @@ function list-remote {
         [string]$branch,
         [string]$remote = "origin"
     )
+
+    Write-Host " "
 
     if (check $remote -ne 0) {
         Write-Host "Remote '$remote' is not reachable." -ForegroundColor Red
@@ -56,16 +63,20 @@ function list-remote {
     if ($matchingBranches.Count -eq 1) {
         Write-Host "Found one matching remote branch!" -ForegroundColor Magenta
         Write-Host " "
-        Write-Host "$($matchingBranches[0])" -ForegroundColor Green
+        Write-Host "$remote/$($matchingBranches[0])" -ForegroundColor Green
         Write-Host " "
     } elseif ($matchingBranches.Count -gt 1) {
         Write-Host "Found multiple remote branches matching!" -ForegroundColor Yellow
         Write-Host " "
         $matchingBranches | ForEach-Object {
-            Write-Host "$_" -ForegroundColor Cyan
+            Write-Host "$remote/$_" -ForegroundColor Cyan
         }
         Write-Host " "
         return
+    } else {
+        Write-Host " "
+        Write-Host "No matching remote branches found." -ForegroundColor Red
+        Write-Host " "
     }
 }
 
@@ -262,10 +273,10 @@ function push {
     Write-Host "Current branch is: " -NoNewLine
     Write-Host $branchName -ForegroundColor Yellow
 
-    Write-Host "Preparing to push changes to remote '$Remote'..." -ForegroundColor Cyan
+    Write-Host "Preparing to push changes to remote '$Remote'..."
     Write-Host "Commit message: " -NoNewLine
     Write-Host $Message -ForegroundColor Magenta
-    Write-Host "Changes: " -NoNewLine
+    Write-Host "Changes:" -NoNewLine
     Write-Host ($changes ? $changes : "No changes") -ForegroundColor Magenta
 
     Write-Host "Adding changes and committing..."
