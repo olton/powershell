@@ -2,9 +2,6 @@
 function init { git init }
 function status { git status }
 function add($file = '.') { git add $file }
-function fetch { git fetch --all }
-function fetch-prune { git fetch --all --prune }
-function fetch-prune-all { git fetch --all --prune --prune-tags }
 function branch { git branch }
 function diff { git diff }
 function pull { git pull }
@@ -14,6 +11,42 @@ function clean { git clean -fd }
 function reset { git reset }
 function reset-hard { git reset --hard HEAD}
 function unindex ($name) { git rm -rf --cached $name }
+
+function fetch { git fetch --all }
+function fetch-remote { 
+    param (
+        [string]$remote = "origin"
+    )
+
+    git fetch $remote
+}
+function fetch-prune { 
+    param (
+        [string]$remote = "origin"
+    )
+
+    git fetch $remote --prune
+}
+function fetch-prune-tags { git fetch --all --prune-tags }
+function fetch-prune-all { git fetch --all --prune --prune-tags }
+function fetch-branch {
+    param (
+        [string]$branch,
+        [string]$remote = "origin"
+    )
+
+    Write-Host " "
+
+    if (check $remote -ne 0) {
+        Write-Host "Remote '$remote' is not reachable." -ForegroundColor Red
+        return
+    }
+
+    Write-Host "Fetching branch '$branch' from remote '$remote'..." -ForegroundColor Cyan
+    git fetch $remote $branch
+    Write-Host "Fetch completed." -ForegroundColor Green
+    Write-Host " "
+}
 
 function list {
     param (
@@ -29,6 +62,7 @@ function list {
         Write-Host " "
         Write-Host "$($matchingBranches[0])" -ForegroundColor Green
         Write-Host " "
+        return
     } elseif ($matchingBranches.Count -gt 1) {
         Write-Host "Found multiple branches matching!" -ForegroundColor Yellow
         Write-Host " "
@@ -36,12 +70,13 @@ function list {
             Write-Host "$_" -ForegroundColor Cyan
         }
         Write-Host " "
-        return
-    } else {
-        Write-Host " "
-        Write-Host "No matching branches found." -ForegroundColor Red
-        Write-Host " "
+        return $matchingBranches.Count
     }
+
+    Write-Host " "
+    Write-Host "No matching branches found." -ForegroundColor Red
+    Write-Host " "
+    return
 }
 
 function list-remote {
@@ -63,21 +98,23 @@ function list-remote {
     if ($matchingBranches.Count -eq 1) {
         Write-Host "Found one matching remote branch!" -ForegroundColor Magenta
         Write-Host " "
-        Write-Host "$remote/$($matchingBranches[0])" -ForegroundColor Green
+        Write-Host "$($matchingBranches[0])" -ForegroundColor Green
         Write-Host " "
+        return
     } elseif ($matchingBranches.Count -gt 1) {
         Write-Host "Found multiple remote branches matching!" -ForegroundColor Yellow
         Write-Host " "
         $matchingBranches | ForEach-Object {
-            Write-Host "$remote/$_" -ForegroundColor Cyan
+            Write-Host "$_" -ForegroundColor Cyan
         }
         Write-Host " "
         return
-    } else {
-        Write-Host " "
-        Write-Host "No matching remote branches found." -ForegroundColor Red
-        Write-Host " "
     }
+
+    Write-Host " "
+    Write-Host "No matching remote branches found." -ForegroundColor Red
+    Write-Host " "
+    return
 }
 
 # Check function to verify if the remote repository is reachable
@@ -88,10 +125,13 @@ function check {
 
     $remoteUrl = git config --get "remote.$remote.url"
     if (-not $remoteUrl -or $remoteUrl.Trim() -eq '') {
+        Write-Host " "
         Write-Host "Remote url is not set for '$remote'!" -ForegroundColor Red
+        Write-Host " "
         return
     }
 
+    Write-Host " "
     Write-Host "Checking remote " -NoNewLine
     Write-Host "$remoteUrl..." -ForegroundColor Cyan
 
@@ -104,6 +144,7 @@ function check {
         Write-Host "❌ Error: Could not reach the remote server." -ForegroundColor Red
     }
 
+    Write-Host " "
     return $code
 }
 
@@ -113,6 +154,8 @@ function checkout {
         [string]$branch
     )
 
+    Write-Host " "
+    Write-Host "Checking out branch '$branch'..." -ForegroundColor Cyan
     $branchExists = git branch --list $branch
 
     if (-not $branchExists -or $branchExists.Trim() -eq '') {
@@ -120,8 +163,12 @@ function checkout {
         $matchingBranches = @(git branch --list "*$branch*" | ForEach-Object { $_.Trim().TrimStart('* ') } | Where-Object { $_ -ne '' })
         
         if ($matchingBranches.Count -eq 1) {
-            Write-Host "Found one matching branch: '$($matchingBranches[0])'. Checking out..." -ForegroundColor Green
+            Write-Host "Found one matching branch. Checking out..." -ForegroundColor Magenta
             $branch = $matchingBranches[0]
+            git checkout $branch 
+            Write-Host "Switched to branch '$branch'." -ForegroundColor Green
+            Write-Host " "
+            exit 0
         } elseif ($matchingBranches.Count -gt 1) {
             Write-Host "Found multiple branches matching '$branch':" -ForegroundColor Yellow
             Write-Host " "
@@ -129,29 +176,29 @@ function checkout {
                 Write-Host "checkout $_" -ForegroundColor Cyan
             }
             Write-Host " "
-            return
+            exit 3
         } else {
             Write-Host "Branch '$branch' does not exist locally. Fetching from remote..." -ForegroundColor Cyan
             if (check -ne 0) {
                 Write-Host "Remote is not reachable. Cannot fetch branch." -ForegroundColor Red
-                return
+                exit 1
             }
-            Write-Host "Fetching branch '$branch' from remote..." -ForegroundColor Cyan
-            git fetch origin $branch 2>$null
-            $branchExists = git branch --list $branch
-            if (-not $branchExists -or $branchExists.Trim() -eq '') {
-                Write-Host "Branch '$branch' does not exist on remote either!" -ForegroundColor Red
-                return
-            } else {
-                Write-Host "Branch '$branch' found on remote. Checking out..." -ForegroundColor Green
-                git checkout $branch
-                return
+            Write-Host "Fetching branch info from remote..." -ForegroundColor Cyan
+            git fetch origin
+            git checkout $branch
+            if ($LASTEXITCODE -ne 0) {
+                Write-Host "Branch '$branch' does not exist on remote either." -ForegroundColor Red
+                Write-Host " "
+                exit 2
             }
+            return
         }
-    }
-
-    Write-Host "Checking out branch '$branch'..." -ForegroundColor Magenta
-    git checkout $branch 
+    } else {
+        git checkout $branch 
+        Write-Host "Switched to branch '$branch'." -ForegroundColor Green
+        Write-Host " "
+        exit 0
+    }   
 }
 
 # Update function to pull latest changes from a specified branch and merge into current branch
@@ -189,8 +236,11 @@ function update {
         git merge $branch
         
         Write-Host "Done!" -ForegroundColor Green
+        return
     } else {
         Write-Host "Branch '$branch' does not exist locally." -ForegroundColor Red
+        Write-Host "Update aborted." -ForegroundColor Red
+        return
     }
 }
 
@@ -205,7 +255,10 @@ function upstream {
         return
     }
 
+    Write-Host " "
+    Write-Host "Setting upstream for branch '$branch' to remote '$origin'..." -ForegroundColor Green
 	git push --set-upstream $origin $branch
+    Write-Host " "
 }
 
 function clone ($repository, $target, $depth = 0) { 
@@ -235,7 +288,7 @@ function restore {
 
 function commit {
     param (
-      [string]$Message
+      [string]$Message = "Update files"
     )
     git add .
     git commit -m $Message
@@ -252,7 +305,6 @@ function push {
     $changes = git diff --shortstat
 
     if (-not $changes -or $changes.Trim() -eq '') {
-        Write-Host " "
         Write-Host "Tree is clean. No changes to push." -ForegroundColor Yellow
         Write-Host " "
         return
@@ -354,7 +406,10 @@ function new {
         return
     }
 
+    Write-Host "Fetching latest branches..." -ForegroundColor Cyan
     $null = fetch
+    
+    Write-Host "Checking if source branch '$From' exists..."
     $branchExists = (git branch --list | Select-String -Pattern $From -Quiet) # "^\*?\s*$From$"
 
     if ($branchExists) {
@@ -386,27 +441,28 @@ function create {
     Write-Host " "
 
     $new_name = "$Type/$Name"
-    $null = fetch
-    $branchExists = (git branch --list | Select-String -Pattern $From -Quiet) # "^\*?\s*$From$"
 
-    if ($branchExists) {
-        Write-Host "Source branch $From exists."
-        Write-Host "Creating new branch $new_name from $From..." -ForegroundColor Cyan
-        Write-Host "Checking out to $From..."
-        git checkout $From
-        if (check -eq 0) {
-            Write-Host "Remote is reachable. Pulling latest changes from '$From'..." -ForegroundColor Yellow
-            git pull
-        }
-    } else {
-        Write-Host "Source branch $From doesn't exist."
-        Write-Host "Creating new branch $new_name from current." -ForegroundColor Magenta
+    Write-Host "Checking out to source branch '$From'..." -ForegroundColor Cyan
+    checkout $From
+
+    if ($LASTEXITCODE -eq 3) {
+        Write-Host "Cannot create branch because multiply source branches found." -ForegroundColor Red
+        Write-Host " "
+        exit 1
     }
 
+    if ($LASTEXITCODE -ne 0) {
+        Write-Host "Cannot create branch because source branch '$From' does not exist." -ForegroundColor Red
+        Write-Host " "
+        exit 2
+    }
+
+    Write-Host "Creating new branch $new_name..." -ForegroundColor Cyan
     $null = git checkout -b $new_name
     Write-Host "Branch $new_name created successfully." -ForegroundColor Green
 
     Write-Host " "
+    exit 0
 }
 
 function feature { 
