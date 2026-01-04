@@ -508,17 +508,38 @@ function release {
 
 function merge {
     param (
-        [string]$Source,
-        [string]$Target
+        [string]$Branch
+        [switch]$Verbose
     )
 
-    Write-Host "Merging branch '$Source' into '$Target'..." -ForegroundColor Cyan
+    if ((-not $Branch -or $Branch.Trim() -eq '')) {
+        Write-Host "Branch name cannot be empty." -ForegroundColor Red
+        Write-Host "Use " -NoNewLine
+        Write-Host "merge <branch>" -ForegroundColor Cyan -NoNewLine
+        Write-Host " to merge branches."
+        Write-Host " "
+        return
+    }
 
-    $null = git checkout $Target
-    $null = git pull origin $Target
+    if (check -eq 0) {
+        Write-Host "Pulling latest changes for current branch..." -ForegroundColor Cyan
+        $null = git pull origin $(git rev-parse --abbrev-ref HEAD)
+    }
 
-    $null = git merge $Source
+    Write-Host "Merging $Branch into current." -ForegroundColor Cyan
+    if ($Verbose) {
+        git merge $Branch --verbose
+    } else {
+        git merge $Branch 2>&1 | Out-Null
+    }
+
+    if ($LASTEXITCODE -ne 0) {
+        Write-Host "Merge failed." -ForegroundColor Red
+        Write-Host " "
+        return
+    }
 
     Write-Host "Merge completed." -ForegroundColor Green
     Write-Host " "
+    return
 }
