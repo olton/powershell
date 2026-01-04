@@ -39,14 +39,14 @@ function fetch-branch {
 
     if (check $remote -ne 0) {
         Write-Host "Remote '$remote' is not reachable." -ForegroundColor Red
-        exit 404
+        return
     }
 
     Write-Host "Fetching branch '$branch' from remote '$remote'..." -ForegroundColor Cyan
     git fetch $remote $branch
     Write-Host "Fetch completed." -ForegroundColor Green
     Write-Host " "
-    exit 0
+    return
 }
 
 function list {
@@ -63,7 +63,7 @@ function list {
         Write-Host " "
         Write-Host "$($matchingBranches[0])" -ForegroundColor Green
         Write-Host " "
-        exit 0
+        return
     } elseif ($matchingBranches.Count -gt 1) {
         Write-Host "Found multiple branches matching!" -ForegroundColor Yellow
         Write-Host " "
@@ -71,13 +71,13 @@ function list {
             Write-Host "$_" -ForegroundColor Cyan
         }
         Write-Host " "
-        exit 1
+        return
     }
 
     Write-Host " "
     Write-Host "No matching branches found." -ForegroundColor Red
     Write-Host " "
-    exit 2
+    return
 }
 
 function list-remote {
@@ -90,7 +90,7 @@ function list-remote {
 
     if (check $remote -ne 0) {
         Write-Host "Remote '$remote' is not reachable." -ForegroundColor Red
-        exit 404
+        return
     }
 
     Write-Host "Searching for similar remote branches for '$branch'... " -NoNewLine
@@ -101,7 +101,7 @@ function list-remote {
         Write-Host " "
         Write-Host "$($matchingBranches[0])" -ForegroundColor Green
         Write-Host " "
-        exit 0
+        return
     } elseif ($matchingBranches.Count -gt 1) {
         Write-Host "Found multiple remote branches matching!" -ForegroundColor Yellow
         Write-Host " "
@@ -109,13 +109,13 @@ function list-remote {
             Write-Host "$_" -ForegroundColor Cyan
         }
         Write-Host " "
-        exit 1
+        return
     }
 
     Write-Host " "
     Write-Host "No matching remote branches found." -ForegroundColor Red
     Write-Host " "
-    exit 2
+    return
 }
 
 # Check function to verify if the remote repository is reachable
@@ -169,7 +169,7 @@ function checkout {
             git checkout $branch 
             Write-Host "Switched to branch '$branch'." -ForegroundColor Green
             Write-Host " "
-            exit 0
+            return
         } elseif ($matchingBranches.Count -gt 1) {
             Write-Host "Found multiple branches matching '$branch':" -ForegroundColor Yellow
             Write-Host " "
@@ -177,12 +177,12 @@ function checkout {
                 Write-Host "checkout $_" -ForegroundColor Cyan
             }
             Write-Host " "
-            exit 3
+            return
         } else {
             Write-Host "Branch '$branch' does not exist locally. Fetching from remote..." -ForegroundColor Cyan
             if (check -ne 0) {
                 Write-Host "Remote is not reachable. Cannot fetch branch." -ForegroundColor Red
-                exit 404
+                return
             }
             Write-Host "Fetching branch info from remote..." -ForegroundColor Cyan
             git fetch origin
@@ -190,17 +190,17 @@ function checkout {
             if ($LASTEXITCODE -ne 0) {
                 Write-Host "Branch '$branch' does not exist on remote either." -ForegroundColor Red
                 Write-Host " "
-                exit 2
+                return
             }
             Write-Host "Switched to branch '$branch'." -ForegroundColor Green
             Write-Host " "
-            exit 0
+            return
         }
     } else {
         git checkout $branch 
         Write-Host "Switched to branch '$branch'." -ForegroundColor Green
         Write-Host " "
-        exit 0
+        return
     }   
 }
 
@@ -213,13 +213,13 @@ function update {
     
     if (check -ne 0) {
         Write-Host "Remote is not reachable. Update aborted." -ForegroundColor Red
-        exit 404
+        return
     }
 
     if (-not $branch -or $branch.Trim() -eq '') {
         Write-Host "Pulling latest changes for current branch" -ForegroundColor Cyan
         pull
-        exit 0
+        return
     }
 
     $currentBranch = git rev-parse --abbrev-ref HEAD
@@ -239,11 +239,11 @@ function update {
         git merge $branch
         
         Write-Host "Done!" -ForegroundColor Green
-        exit 0
+        return
     } else {
         Write-Host "Branch '$branch' does not exist locally." -ForegroundColor Red
         Write-Host "Update aborted." -ForegroundColor Red
-        exit 1
+        return
     }
 }
 
@@ -255,14 +255,14 @@ function upstream {
 	
     if (check $origin -ne 0) {
         Write-Host "Cannot set upstream because remote '$origin' is not reachable." -ForegroundColor Red
-        exit 404
+        return
     }
 
     Write-Host " "
     Write-Host "Setting upstream for branch '$branch' to remote '$origin'..." -ForegroundColor Green
 	git push --set-upstream $origin $branch
     Write-Host " "
-    exit 0
+    return
 }
 
 function clone ($repository, $target, $depth = 0) { 
@@ -311,7 +311,7 @@ function push {
     if (-not $changes -or $changes.Trim() -eq '') {
         Write-Host "Tree is clean. No changes to push." -ForegroundColor Yellow
         Write-Host " "
-        exit 0
+        return
     }
 
     Write-Host "Changes found. Starting commit and push..." -ForegroundColor Cyan
@@ -320,7 +320,7 @@ function push {
         Write-Host " "
         Write-Host "Cannot push, because remote '$Remote' is not reachable." -ForegroundColor Red
         Write-Host " "
-        exit 404
+        return
     }
 
     Write-Host "Getting current branch name..." 
@@ -353,7 +353,7 @@ function push {
     Write-Host " "    
     Write-Host "Push operation completed." -ForegroundColor Green
     Write-Host " "   
-    exit 0 
+    return
 }
 
 function log($deep = -1) { 
@@ -396,19 +396,19 @@ function new {
         Write-Host "new branch_name [from_branch]" -ForegroundColor Cyan -NoNewLine
         Write-Host " to create a new branch."
         Write-Host " "
-        exit 1
+        return
     }
 
     if (exists -Name $Name) {
         Write-Host "Branch $Name already exists." -ForegroundColor Red
         Write-Host " "
-        exit 404
+        return
     }
 
     if ($From -eq $Name) {
         Write-Host "Source branch and new branch name cannot be the same." -ForegroundColor Red
         Write-Host " "
-        exit 2
+        return
     }
 
     Write-Host "Fetching latest branches..." -ForegroundColor Cyan
@@ -433,7 +433,7 @@ function new {
     $null = git checkout -b $Name
     Write-Host "Branch $Name created successfully." -ForegroundColor Green
     Write-Host " "
-    exit 0
+    return
 }
 
 function create {
@@ -450,16 +450,16 @@ function create {
     Write-Host "Checking out to source branch '$From'..." -ForegroundColor Cyan
     checkout $From
 
-    if ($LASTEXITCODE -eq 3) {
-        Write-Host "Cannot create branch because multiply source branches found." -ForegroundColor Red
-        Write-Host " "
-        exit 1
-    }
+    # if ($LASTEXITCODE -eq 3) {
+    #     Write-Host "Cannot create branch because multiply source branches found." -ForegroundColor Red
+    #     Write-Host " "
+    #     return
+    # }
 
     if ($LASTEXITCODE -ne 0) {
         Write-Host "Cannot create branch because source branch '$From' does not exist." -ForegroundColor Red
         Write-Host " "
-        exit 2
+        return
     }
 
     Write-Host "Creating new branch $new_name..." -ForegroundColor Cyan
@@ -467,7 +467,7 @@ function create {
     Write-Host "Branch $new_name created successfully." -ForegroundColor Green
 
     Write-Host " "
-    exit 0
+    return
 }
 
 function feature { 
