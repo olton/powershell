@@ -508,7 +508,7 @@ function release {
 
 function merge {
     param (
-        [string]$Branch
+        [string]$Branch,
         [switch]$Verbose
     )
 
