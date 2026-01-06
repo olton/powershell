@@ -277,6 +277,26 @@ function rename($oldName, $newName) {
     git branch -m $oldName $newName
 }
 
+function restore-from {
+    param (
+        [string]$name,
+        [string]$source = "master"
+    )
+
+    if (-not $name -or $name.Trim() -eq '') {
+        Write-Host "File name cannot be empty." -ForegroundColor Red
+        return
+    }
+
+    Write-Host "Restoring file '$name' from '$source'..." -ForegroundColor Cyan
+    git restore --source=$source $name
+    if ($LASTEXITCODE -ne 0) {
+        Write-Host "Failed to restore file '$name' from '$source'." -ForegroundColor Red
+        return
+    }
+    Write-Host "File '$name' restored successfully." -ForegroundColor Green
+}
+
 function restore {
     param (
         [Parameter(ValueFromRemainingArguments=$true)]
@@ -301,14 +321,15 @@ function commit {
 function push {
     param (
         [string]$Message,
-        [string]$Remote = "origin"
+        [string]$Remote = "origin",
+        [switch]$Force
     )
 
     Write-Host " "
 
     $changes = git diff --shortstat
 
-    if (-not $changes -or $changes.Trim() -eq '') {
+    if (-not $changes -or $changes.Trim() -eq '' -and -not $Force) {
         Write-Host "Tree is clean. No changes to push." -ForegroundColor Yellow
         Write-Host " "
         return
