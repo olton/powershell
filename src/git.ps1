@@ -11,6 +11,7 @@ function clean { git clean -fd }
 function reset { git reset }
 function reset-hard { git reset --hard HEAD}
 function unindex ($name) { git rm -rf --cached $name }
+function clear-index { git rm --cached -r . -f }
 
 function fetch { git fetch --all }
 function fetch-remote { 
@@ -277,6 +278,26 @@ function rename($oldName, $newName) {
     git branch -m $oldName $newName
 }
 
+function restore-from {
+    param (
+        [string]$name,
+        [string]$source = "master"
+    )
+
+    if (-not $name -or $name.Trim() -eq '') {
+        Write-Host "File name cannot be empty." -ForegroundColor Red
+        return
+    }
+
+    Write-Host "Restoring file '$name' from '$source'..." -ForegroundColor Cyan
+    git restore --source=$source $name
+    if ($LASTEXITCODE -ne 0) {
+        Write-Host "Failed to restore file '$name' from '$source'." -ForegroundColor Red
+        return
+    }
+    Write-Host "File '$name' restored successfully." -ForegroundColor Green
+}
+
 function restore {
     param (
         [Parameter(ValueFromRemainingArguments=$true)]
@@ -308,13 +329,7 @@ function push {
 
     $changes = git diff --shortstat
 
-    if (-not $changes -or $changes.Trim() -eq '') {
-        Write-Host "Tree is clean. No changes to push." -ForegroundColor Yellow
-        Write-Host " "
-        return
-    }
-
-    Write-Host "Changes found. Starting commit and push..." -ForegroundColor Cyan
+    Write-Host "Pushing current changes..."
 
     if (check $Remote -ne 0) {
         Write-Host " "
@@ -440,12 +455,19 @@ function create {
     param (
         [string]$Type,
         [string]$Name,
-        [string]$From = "master"
+        [string]$From = "master",
+        [switch]$Force
     )
 
     Write-Host " "
 
     $new_name = "$Type/$Name"
+
+    if (exists -Name $Name) {
+        Write-Host "Branch $Name already exists." -ForegroundColor Red
+        Write-Host " "
+        return
+    }
 
     Write-Host "Checking out to source branch '$From'..." -ForegroundColor Cyan
     checkout $From
@@ -456,7 +478,7 @@ function create {
     #     return
     # }
 
-    if ($LASTEXITCODE -ne 0) {
+    if ($LASTEXITCODE -ne 0 -and -not $Force) {
         Write-Host "Cannot create branch because source branch '$From' does not exist." -ForegroundColor Red
         Write-Host " "
         return
@@ -530,7 +552,7 @@ function merge {
     if ($Verbose) {
         git merge $Branch --verbose
     } else {
-        git merge $Branch 2>&1 | Out-Null
+        git merge $Branch
     }
 
     if ($LASTEXITCODE -ne 0) {

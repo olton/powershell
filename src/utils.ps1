@@ -17,3 +17,14 @@ function Format-Size {
         return "{0} B" -f $bytes
     }
 }
+
+function errors {
+    param (
+        [int]$count = 5
+    )
+    $Error | Select-Object -First $count
+}
+
+function last-error {
+    $Error[0] | Format-List * -Force
+}
