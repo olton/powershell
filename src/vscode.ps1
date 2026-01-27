@@ -1,10 +1,18 @@
 function extract-vscode-extensions {
     param (
         [string]$File = "vscode-extensions",
-        [switch]$Install
+        [switch]$Install,
+        [switch]$Linux
     )
 
-    $ext = if ($Install) { ".ps1" } else { ".txt" }
+    $ext = if ($Install) { 
+        if ($Linux) { 
+            ".sh" 
+            } 
+        else {
+            ".ps1" 
+        }
+    } else { ".txt" }
     $outputFile = "$File$ext"
     
     Write-Host " "
