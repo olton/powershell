@@ -1,50 +1,91 @@
 # Git helper functions
 function init { git init }
 function status { git status }
-function add($file = '.') { git add $file }
+function add { 
+    param (
+        [Parameter(Mandatory, HelpMessage = "Введіть шлях до файлу(ів)")]
+        [string]$File
+    )
+    git add $File 
+}
 function branch { git branch }
 function diff { git diff }
 function pull { git pull }
-function del-branch($branch){ git branch -D $branch }
-function del-remote($branch, $remote = "origin"){ git push $remote --delete $branch }
+function del-branch { 
+    param (
+        [Parameter(Mandatory, HelpMessage = "Введіть назву гілки")]
+        [string]$Branch
+    )
+    git branch -D $Branch 
+}
+function del-remote { 
+    param (
+        [Parameter(Mandatory, HelpMessage = "Введіть назву гілки")]
+        [string]$Branch,
+        [string]$Remote = "origin"
+    )
+    git push $Remote --delete $Branch 
+}
 function clean { git clean -fd }
 function reset { git reset }
 function reset-hard { git reset --hard HEAD}
-function unindex ($name) { git rm -rf --cached $name }
+function unindex { 
+    param (
+        [Parameter(Mandatory, HelpMessage = "Введіть шлях до файлу(ів)")]
+        [string]$Name
+    )
+    git rm -rf --cached $Name 
+}
 function clear-index { git rm --cached -r . -f }
+function current {
+    param (
+        [switch]$Verbose
+    )
+
+    $currentBranch = git rev-parse --abbrev-ref HEAD
+
+    if ($Verbose) {
+        Write-Host "Getting current branch name..."
+        Write-Host "Current branch is: " -NoNewLine
+        Write-Host $currentBranch -ForegroundColor Yellow
+    }
+
+    return $currentBranch
+}
 
 function fetch { git fetch --all }
 function fetch-remote { 
     param (
-        [string]$remote = "origin"
+        [string]$Remote = "origin"
     )
 
-    git fetch $remote
+    git fetch $Remote
 }
 function fetch-prune { 
     param (
-        [string]$remote = "origin"
+        [string]$Remote = "origin"
     )
 
-    git fetch $remote --prune
+    git fetch $Remote --prune
 }
 function fetch-prune-tags { git fetch --all --prune-tags }
 function fetch-prune-all { git fetch --all --prune --prune-tags }
 function fetch-branch {
     param (
-        [string]$branch,
-        [string]$remote = "origin"
+        [Parameter(Mandatory, HelpMessage = "Введіть назву гілки")]
+        [string]$Branch,
+        [string]$Remote = "origin"
     )
 
     Write-Host " "
 
-    if (check $remote -ne 0) {
-        Write-Host "Remote '$remote' is not reachable." -ForegroundColor Red
+    if (check $Remote -ne 0) {
+        Write-Host "Remote '$Remote' is not reachable." -ForegroundColor Red
         return
     }
 
-    Write-Host "Fetching branch '$branch' from remote '$remote'..." -ForegroundColor Cyan
-    git fetch $remote $branch
+    Write-Host "Fetching branch '$Branch' from remote '$Remote'..." -ForegroundColor Cyan
+    git fetch $Remote $Branch
     Write-Host "Fetch completed." -ForegroundColor Green
     Write-Host " "
     return
@@ -52,12 +93,13 @@ function fetch-branch {
 
 function list {
     param (
-        [string]$branch
+        [Parameter(Mandatory, HelpMessage = "Введіть назву гілки, або її частину")]
+        [string]$Branch
     )
 
     Write-Host " "
-    Write-Host "Searching for similar branches for '$branch'... " -NoNewLine
-    $matchingBranches = @(git branch --list "*$branch*" | ForEach-Object { $_.Trim().TrimStart('* ') } | Where-Object { $_ -ne '' })
+    Write-Host "Searching for similar branches for '$Branch'... " -NoNewLine
+    $matchingBranches = @(git branch --list "*$Branch*" | ForEach-Object { $_.Trim().TrimStart('* ') } | Where-Object { $_ -ne '' })
     
     if ($matchingBranches.Count -eq 1) {
         Write-Host "Found one matching branch!" -ForegroundColor Magenta
@@ -83,19 +125,20 @@ function list {
 
 function list-remote {
     param (
-        [string]$branch,
-        [string]$remote = "origin"
+        [Parameter(Mandatory, HelpMessage = "Введіть назву гілки, або її частину")]
+        [string]$Branch,
+        [string]$Remote = "origin"
     )
 
     Write-Host " "
 
-    if (check $remote -ne 0) {
-        Write-Host "Remote '$remote' is not reachable." -ForegroundColor Red
+    if (check $Remote -ne 0) {
+        Write-Host "Remote '$Remote' is not reachable." -ForegroundColor Red
         return
     }
 
-    Write-Host "Searching for similar remote branches for '$branch'... " -NoNewLine
-    $matchingBranches = @(git ls-remote --heads $remote "*$branch*" | ForEach-Object { ($_ -split "`t")[1].Replace("refs/heads/", "").Trim() } | Where-Object { $_ -ne '' })
+    Write-Host "Searching for similar remote branches for '$Branch'... " -NoNewLine
+    $matchingBranches = @(git ls-remote --heads $Remote "*$Branch*" | ForEach-Object { ($_ -split "`t")[1].Replace("refs/heads/", "").Trim() } | Where-Object { $_ -ne '' })
     
     if ($matchingBranches.Count -eq 1) {
         Write-Host "Found one matching remote branch!" -ForegroundColor Magenta
@@ -122,13 +165,13 @@ function list-remote {
 # Check function to verify if the remote repository is reachable
 function check {
     param (
-        [string]$remote = "origin"
+        [string]$Remote = "origin"
     )
 
-    $remoteUrl = git config --get "remote.$remote.url"
+    $remoteUrl = git config --get "remote.$Remote.url"
     if (-not $remoteUrl -or $remoteUrl.Trim() -eq '') {
         Write-Host " "
-        Write-Host "Remote url is not set for '$remote'!" -ForegroundColor Red
+        Write-Host "Remote url is not set for '$Remote'!" -ForegroundColor Red
         Write-Host " "
         return -1
     }
@@ -153,26 +196,37 @@ function check {
 # Enhanced checkout function with branch existence check and suggestions
 function checkout { 
     param (
-        [string]$branch
+        [Parameter(Mandatory, HelpMessage = "Введіть назву гілки")]
+        [string]$Branch
     )
 
+    $hasChanges = git status --porcelain
+
+    if ($hasChanges -and $hasChanges.Trim()) {
+        Write-Host "You have uncommitted changes in your working directory." -ForegroundColor Yellow
+        Write-Host "Please commit or stash your changes before switching branches." -ForegroundColor Yellow
+        Write-Host " "
+        status
+        return
+    }
+
     Write-Host " "
-    Write-Host "Checking out branch '$branch'..." -ForegroundColor Cyan
-    $branchExists = git branch --list $branch
+    Write-Host "Checking out branch '$Branch'..." -ForegroundColor Cyan
+    $branchExists = git branch --list $Branch
 
     if (-not $branchExists -or $branchExists.Trim() -eq '') {
-        Write-Host "Branch '$branch' does not exist locally. Searching for similar branches..." -ForegroundColor Magenta
-        $matchingBranches = @(git branch --list "*$branch*" | ForEach-Object { $_.Trim().TrimStart('* ') } | Where-Object { $_ -ne '' })
+        Write-Host "Branch '$Branch' does not exist locally. Searching for similar branches..." -ForegroundColor Magenta
+        $matchingBranches = @(git branch --list "*$Branch*" | ForEach-Object { $_.Trim().TrimStart('* ') } | Where-Object { $_ -ne '' })
         
         if ($matchingBranches.Count -eq 1) {
             Write-Host "Found one matching branch. Checking out..." -ForegroundColor Magenta
-            $branch = $matchingBranches[0]
-            git checkout $branch 
-            Write-Host "Switched to branch '$branch'." -ForegroundColor Green
+            $Branch = $matchingBranches[0]
+            git checkout $Branch 
+            Write-Host "Switched to branch '$Branch'." -ForegroundColor Green
             Write-Host " "
             return
         } elseif ($matchingBranches.Count -gt 1) {
-            Write-Host "Found multiple branches matching '$branch':" -ForegroundColor Yellow
+            Write-Host "Found multiple branches matching '$Branch':" -ForegroundColor Yellow
             Write-Host " "
             $matchingBranches | ForEach-Object {
                 Write-Host "checkout $_" -ForegroundColor Cyan
@@ -180,26 +234,26 @@ function checkout {
             Write-Host " "
             return
         } else {
-            Write-Host "Branch '$branch' does not exist locally. Fetching from remote..." -ForegroundColor Cyan
+            Write-Host "Branch '$Branch' does not exist locally. Fetching from remote..." -ForegroundColor Cyan
             if (check -ne 0) {
                 Write-Host "Remote is not reachable. Cannot fetch branch." -ForegroundColor Red
                 return
             }
             Write-Host "Fetching branch info from remote..." -ForegroundColor Cyan
             git fetch origin
-            git checkout $branch
+            git checkout $Branch
             if ($LASTEXITCODE -ne 0) {
-                Write-Host "Branch '$branch' does not exist on remote either." -ForegroundColor Red
+                Write-Host "Branch '$Branch' does not exist on remote either." -ForegroundColor Red
                 Write-Host " "
                 return
             }
-            Write-Host "Switched to branch '$branch'." -ForegroundColor Green
+            Write-Host "Switched to branch '$Branch'." -ForegroundColor Green
             Write-Host " "
             return
         }
     } else {
-        git checkout $branch 
-        Write-Host "Switched to branch '$branch'." -ForegroundColor Green
+        git checkout $Branch 
+        Write-Host "Switched to branch '$Branch'." -ForegroundColor Green
         Write-Host " "
         return
     }   
@@ -209,7 +263,7 @@ function checkout {
 # If no branch is specified, it pulls latest changes for the current branch
 function update {
     param (
-        [string]$branch = ''
+        [string]$Branch = ''
     )
     
     if (check -ne 0) {
@@ -217,32 +271,41 @@ function update {
         return
     }
 
-    if (-not $branch -or $branch.Trim() -eq '') {
+    $hasChanges = git status --porcelain
+    If ($hasChanges -and $hasChanges.Trim()) {
+        Write-Host "You have uncommitted changes in your working directory." -ForegroundColor Yellow
+        Write-Host "Please commit or stash your changes before pulling updates." -ForegroundColor Yellow
+        Write-Host " "
+        status
+        return
+    }
+
+    if (-not $Branch -or $Branch.Trim() -eq '') {
         Write-Host "Pulling latest changes for current branch" -ForegroundColor Cyan
         pull
         return
     }
 
-    $currentBranch = git rev-parse --abbrev-ref HEAD
-    $branchExists = git branch --list $branch
+    $currentBranch = current
+    $branchExists = git branch --list $Branch
     
     if ($branchExists) {
-        Write-Host "Switching to branch '$branch'..." -ForegroundColor Cyan
-        git checkout $branch
+        Write-Host "Switching to branch '$Branch'..." -ForegroundColor Cyan
+        git checkout $Branch
         
-        Write-Host "Pulling latest changes from '$branch'..." -ForegroundColor Cyan
-        git pull origin $branch
+        Write-Host "Pulling latest changes from '$Branch'..." -ForegroundColor Cyan
+        git pull origin $Branch
         
         Write-Host "Switching back to '$currentBranch'..." -ForegroundColor Cyan
         git checkout $currentBranch
         
-        Write-Host "Merging '$branch' into '$currentBranch'..." -ForegroundColor Cyan
-        git merge $branch
+        Write-Host "Merging '$Branch' into '$currentBranch'..." -ForegroundColor Cyan
+        git merge $Branch
         
         Write-Host "Done!" -ForegroundColor Green
         return
     } else {
-        Write-Host "Branch '$branch' does not exist locally." -ForegroundColor Red
+        Write-Host "Branch '$Branch' does not exist locally." -ForegroundColor Red
         Write-Host "Update aborted." -ForegroundColor Red
         return
     }
@@ -250,64 +313,92 @@ function update {
 
 function upstream {
 	param (
-	  [string]$branch,
-	  [string]$origin = 'origin'
+      [Parameter(Mandatory, HelpMessage = "Введіть назву гілки")]
+	  [string]$Branch,
+	  [string]$Origin = 'origin'
 	)
 	
-    if (check $origin -ne 0) {
-        Write-Host "Cannot set upstream because remote '$origin' is not reachable." -ForegroundColor Red
+    if (check $Origin -ne 0) {
+        Write-Host "Cannot set upstream because remote '$Origin' is not reachable." -ForegroundColor Red
         return
     }
 
     Write-Host " "
-    Write-Host "Setting upstream for branch '$branch' to remote '$origin'..." -ForegroundColor Green
-	git push --set-upstream $origin $branch
+    Write-Host "Setting upstream for branch '$Branch' to remote '$Origin'..." -ForegroundColor Green
+	git push --set-upstream $Origin $Branch
     Write-Host " "
     return
 }
 
-function clone ($repository, $target, $depth = 0) { 
-    if ($depth -gt 0) {
-        git clone --depth $depth $repository $target
+function clone { 
+    param (
+        [Parameter(Mandatory, HelpMessage = "Введіть URL репозиторію")]
+        [string]$Repository, 
+        [Parameter(Mandatory, HelpMessage = "Введіть цільову теку (для поточної теки використайте '.')")]
+        [string]$Target, 
+        [int]$Depth = 0
+    )
+
+    if ($Depth -gt 0) {
+        git clone --depth $Depth $Repository $Target
     } else {
-        git clone $repository $target
+        git clone $Repository $Target
     }
 }
 
-function rename($oldName, $newName) {
-    git branch -m $oldName $newName
+function clone-one {
+    param (
+        [Parameter(Mandatory, HelpMessage = "Введіть URL репозиторію")]
+        [string]$Repository, 
+        [Parameter(Mandatory, HelpMessage = "Введіть цільову теку (для поточної теки використайте '.')")]
+        [string]$Target
+    )
+
+    clone -Repository $Repository -Target $Target -Depth 1
+}
+
+function rename {
+    param (
+        [Parameter(Mandatory, HelpMessage = "Введіть нову назву гілки")]
+        [string]$NewName,
+        [string]$OldName
+    )
+
+    $currentBranch = current
+
+    git branch -m $OldName $NewName
 }
 
 function restore-from {
     param (
-        [string]$name,
-        [string]$source = "master"
+        [string]$Name,
+        [string]$Source = "master"
     )
 
-    if (-not $name -or $name.Trim() -eq '') {
+    if (-not $Name -or $Name.Trim() -eq '') {
         Write-Host "File name cannot be empty." -ForegroundColor Red
         return
     }
 
-    Write-Host "Restoring file '$name' from '$source'..." -ForegroundColor Cyan
-    git restore --source=$source $name
+    Write-Host "Restoring file '$Name' from '$Source'..." -ForegroundColor Cyan
+    git restore --source=$Source $Name
     if ($LASTEXITCODE -ne 0) {
-        Write-Host "Failed to restore file '$name' from '$source'." -ForegroundColor Red
+        Write-Host "Failed to restore file '$Name' from '$Source'." -ForegroundColor Red
         return
     }
-    Write-Host "File '$name' restored successfully." -ForegroundColor Green
+    Write-Host "File '$Name' restored successfully." -ForegroundColor Green
 }
 
 function restore {
     param (
         [Parameter(ValueFromRemainingArguments=$true)]
-        [string[]]$names
+        [string[]]$Names
     )
     
-    if ($names.Count -eq 0) {
+    if ($Names.Count -eq 0) {
         git restore .
     } else {
-        git restore $names
+        git restore $Names
     }
 }
 
@@ -322,7 +413,8 @@ function commit {
 function push {
     param (
         [string]$Message,
-        [string]$Remote = "origin"
+        [string]$Remote = "origin",
+        [switch]$Simple
     )
 
     Write-Host " "
@@ -338,8 +430,17 @@ function push {
         return
     }
 
+    if ($Simple) {
+        Write-Host "Using only push command..." -ForegroundColor Yellow
+        git push
+        Write-Host " "    
+        Write-Host "Push operation completed." -ForegroundColor Green
+        Write-Host " "   
+        return
+    }
+
     Write-Host "Getting current branch name..." 
-    $branchName = git rev-parse --abbrev-ref HEAD
+    $branchName = current
 
     Write-Host "Current branch is: " -NoNewLine
     Write-Host $branchName -ForegroundColor Yellow
@@ -371,15 +472,19 @@ function push {
     return
 }
 
-function log($deep = -1) { 
-    if ($deep -gt 0) {
-        $deep = $deep * -1
+function log { 
+    param (
+        [int]$Deep = 1
+    )
+    if ($Deep -gt 0) {
+        $Deep = $Deep * -1
     }
-    git log $deep 
+    git log $Deep 
 }
 
 function exists {
     param (
+        [Parameter(Mandatory, HelpMessage = "Введіть назву гілки")]
         [string]$Name,
         [string]$Remote = ""
     )
@@ -397,63 +502,11 @@ function exists {
     return ($branchExists -ne $null)
 }
 
-function new { 
-    param (
-        [string]$Name,
-        [string]$From = "master"
-    )
-
-    Write-Host " "
-
-    if (!$Name -or $Name.Trim() -eq '') {
-        Write-Host "Branch name cannot be empty." -ForegroundColor Red
-        Write-Host "Use " -NoNewLine
-        Write-Host "new branch_name [from_branch]" -ForegroundColor Cyan -NoNewLine
-        Write-Host " to create a new branch."
-        Write-Host " "
-        return
-    }
-
-    if (exists -Name $Name) {
-        Write-Host "Branch $Name already exists." -ForegroundColor Red
-        Write-Host " "
-        return
-    }
-
-    if ($From -eq $Name) {
-        Write-Host "Source branch and new branch name cannot be the same." -ForegroundColor Red
-        Write-Host " "
-        return
-    }
-
-    Write-Host "Fetching latest branches..." -ForegroundColor Cyan
-    $null = fetch
-    
-    Write-Host "Checking if source branch '$From' exists..."
-    $branchExists = (git branch --list | Select-String -Pattern $From -Quiet) # "^\*?\s*$From$"
-
-    if ($branchExists) {
-        Write-Host "Source branch $From exists."
-        Write-Host "Checking out to $From..."
-        git checkout $From
-        if (check -eq 0) {
-            Write-Host "Remote is reachable. Pulling latest changes from '$From'..." -ForegroundColor Cyan
-            git pull
-        }
-    } else {
-        Write-Host "Source branch $From doesn't exist."
-        Write-Host "Created new branch $Name from current." -ForegroundColor Green
-    }
-
-    $null = git checkout -b $Name
-    Write-Host "Branch $Name created successfully." -ForegroundColor Green
-    Write-Host " "
-    return
-}
-
 function create {
     param (
+        [Parameter(Mandatory, HelpMessage = "Введіть тип гілки")]
         [string]$Type,
+        [Parameter(Mandatory, HelpMessage = "Введіть назву гілки")]
         [string]$Name,
         [string]$From = "master",
         [switch]$Force
@@ -461,7 +514,7 @@ function create {
 
     Write-Host " "
 
-    $new_name = "$Type/$Name"
+    $new_name = $Type.trim() == '' ? $Name : "$Type/$Name"
 
     if (exists -Name $Name) {
         Write-Host "Branch $Name already exists." -ForegroundColor Red
@@ -494,6 +547,17 @@ function create {
 
 function feature { 
     param (
+        [Parameter(Mandatory, HelpMessage = "Введіть назву гілки")]
+        [string]$Name,
+        [string]$From = "master"
+    )
+
+    create -Type "new" -Name $Name -From $From
+}
+
+function feature { 
+    param (
+        [Parameter(Mandatory, HelpMessage = "Введіть назву гілки")]
         [string]$Name,
         [string]$From = "master"
     )
@@ -503,6 +567,7 @@ function feature {
 
 function review { 
     param (
+        [Parameter(Mandatory, HelpMessage = "Введіть назву гілки")]
         [string]$Name,
         [string]$From = "master"
     )
@@ -512,6 +577,7 @@ function review {
 
 function hotfix { 
     param (
+        [Parameter(Mandatory, HelpMessage = "Введіть назву гілки")]
         [string]$Name,
         [string]$From = "master"
     )
@@ -521,6 +587,7 @@ function hotfix {
 
 function release { 
     param (
+        [Parameter(Mandatory, HelpMessage = "Введіть назву гілки")]
         [string]$Name,
         [string]$From = "master"
     )
@@ -530,6 +597,7 @@ function release {
 
 function merge {
     param (
+        [Parameter(Mandatory, HelpMessage = "Введіть назву гілки яку потрібно злити в поточну")]
         [string]$Branch,
         [switch]$Verbose
     )
@@ -545,7 +613,7 @@ function merge {
 
     if (check -eq 0) {
         Write-Host "Pulling latest changes for current branch..." -ForegroundColor Cyan
-        $null = git pull origin $(git rev-parse --abbrev-ref HEAD)
+        $null = git pull origin $(current)
     }
 
     Write-Host "Merging $Branch into current." -ForegroundColor Cyan
