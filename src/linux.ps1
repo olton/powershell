@@ -8,49 +8,63 @@ Remove-Alias -Name ls -Force -ErrorAction SilentlyContinue
 
 function search {
     param (
-        [string]$path,
-        [string]$file
+        [string]$Path = ".",
+        [Parameter(Mandatory, HelpMessage = "Введіть назву файлу або її частину")]
+        [string]$File
     )
-    Get-ChildItem -Path $path -Recurse -Force -Include "*$file*" -ErrorAction SilentlyContinue
+    Get-ChildItem -Path $Path -Recurse -Force -Include "*$File*" -ErrorAction SilentlyContinue
 }
 
 function ls { 
     param (
-        [string]$path = ".",
-        [string]$pattern = "*",
-        [switch]$r
+        [string]$Path = ".",
+        [string]$Pattern = "*",
+        [switch]$R
     )
 
-    Get-ChildItem -Name -Path $path -Filter $pattern -ErrorAction SilentlyContinue | ForEach-Object {
-        $item = Get-Item -Path (Join-Path -Path $path -ChildPath $_) -ErrorAction SilentlyContinue
+    Get-ChildItem -Name -Path $Path -Filter $Pattern -ErrorAction SilentlyContinue | ForEach-Object {
+        $item = Get-Item -Path (Join-Path -Path $Path -ChildPath $_) -ErrorAction SilentlyContinue
         if ($item) {
             $isDir = $item.PSIsContainer
             $color = if ($isDir) { "Cyan" } else { "White" }
-            Write-Host "$_ " -ForegroundColor $color -NoNewLine:(-not $r)
+            Write-Host "$_ " -ForegroundColor $color -NoNewLine:(-not $R)
         }
     }
 }
 
-function la($path = ".", $pattern) { 
-    Get-ChildItem -Path $path -Filter $pattern -ErrorAction SilentlyContinue
+function la { 
+    param (
+        [string]$Path = ".", 
+        [string]$Pattern
+    )
+    Get-ChildItem -Path $Path -Filter $Pattern -ErrorAction SilentlyContinue
 }
 
-function lf($path = ".", $pattern) { 
-    Get-ChildItem -Path $path -Filter $pattern -Force -ErrorAction SilentlyContinue
+function lf { 
+    param (
+        [string]$Path = ".", 
+        [string]$Pattern
+    )
+    Get-ChildItem -Path $Path -Filter $Pattern -Force -ErrorAction SilentlyContinue
 }
 
-function lr($path = ".", $pattern) { 
-    Get-ChildItem -Path $path -Filter $pattern -Force -Recurse -ErrorAction SilentlyContinue
+function lr { 
+    param (
+        [string]$Path = ".", 
+        [string]$Pattern
+    )
+    Get-ChildItem -Path $Path -Filter $Pattern -Force -Recurse -ErrorAction SilentlyContinue
 }
 
 function tail {
     param (
-        [string]$path,
+        [Parameter(Mandatory, HelpMessage = "Введіть шлях до файлу")]
+        [string]$Path,
         [int]$Lines = 10,
-        [switch]$f
+        [switch]$F
     )
 
-    Get-Content -Path $path -Tail $Lines -Wait:$f
+    Get-Content -Path $Path -Tail $Lines -Wait:$F
 }
 
 function pwd { Get-Location }
@@ -60,21 +74,24 @@ function clear { cls }
 
 function grep {
     param(
-        [string]$search,
-        [string]$where
+        [Parameter(Mandatory, HelpMessage = "Введіть строку для пошуку")]
+        [string]$Search,
+        [string]$Where
     )
 
-    $content = if ($where) {
-        Get-Content $where
+    $content = if ($Where) {
+        Get-Content $Where
     } else {
         $input
     }
     
-    $content | Select-String -Pattern $search
+    $content | Select-String -Pattern $Search
 }
 
 function du {
-    param([string]$Directory) 
+    param(
+        [string]$Directory
+    ) 
 
     $dir = $Directory ? $Directory : (Get-Location).Path
 
@@ -91,9 +108,9 @@ function du {
 function df {
     param(
         [string]$Path,
-        [switch]$h,
-        [switch]$k,
-        [switch]$m,
+        [switch]$H,
+        [switch]$K,
+        [switch]$M,
         [switch]$T
     )
 
@@ -117,15 +134,15 @@ function df {
         $total = $used + $free
         $percentUsed = if ($total -gt 0) { [math]::Round(($used / $total) * 100, 1) } else { 0 }
 
-        if ($h) {
+        if ($H) {
             $usedFormatted = Format-Size $used
             $freeFormatted = Format-Size $free
             $totalFormatted = Format-Size $total
-        } elseif ($m) {
+        } elseif ($M) {
             $usedFormatted = "{0:F1} MB" -f ($used / 1MB)
             $freeFormatted = "{0:F1} MB" -f ($free / 1MB)
             $totalFormatted = "{0:F1} MB" -f ($total / 1MB)
-        } elseif ($k) {
+        } elseif ($K) {
             $usedFormatted = "{0:F0} KB" -f ($used / 1KB)
             $freeFormatted = "{0:F0} KB" -f ($free / 1KB)
             $totalFormatted = "{0:F0} KB" -f ($total / 1KB)
@@ -156,27 +173,28 @@ function df {
 }
 
 function Format-Size {
-    param([long]$bytes)
+    param([long]$Bytes)
     
-    if ($bytes -ge 1TB) {
-        return "{0:F1} TB" -f ($bytes / 1TB)
-    } elseif ($bytes -ge 1GB) {
-        return "{0:F1} GB" -f ($bytes / 1GB)
-    } elseif ($bytes -ge 1MB) {
-        return "{0:F1} MB" -f ($bytes / 1MB)
-    } elseif ($bytes -ge 1KB) {
-        return "{0:F1} KB" -f ($bytes / 1KB)
+    if ($Bytes -ge 1TB) {
+        return "{0:F1} TB" -f ($Bytes / 1TB)
+    } elseif ($Bytes -ge 1GB) {
+        return "{0:F1} GB" -f ($Bytes / 1GB)
+    } elseif ($Bytes -ge 1MB) {
+        return "{0:F1} MB" -f ($Bytes / 1MB)
+    } elseif ($Bytes -ge 1KB) {
+        return "{0:F1} KB" -f ($Bytes / 1KB)
     } else {
-        return "{0} B" -f $bytes
+        return "{0} B" -f $Bytes
     }
 }
 
 function rn {
 	param (
-		[string]$path,
-		[string]$newName
+        [Parameter(Mandatory, HelpMessage = "Введіть шлях до файлу/теки")]
+		[string]$Path,
+        [Parameter(Mandatory, HelpMessage = "Введіть нове ім'я файлу/теки")]
+		[string]$NewName
 	)
 	
-	Rename-Item -Path $path -NewName $newName
+	Rename-Item -Path $Path -NewName $NewName
 }
-
