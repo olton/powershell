@@ -1,7 +1,6 @@
-# Certificates
 function get-localhost-conf {
     param (
-        [string]$path = "."
+        [string]$Path = "."
     )
 
     Write-Host "Creating localhost.conf..." -NoNewLine
@@ -32,7 +31,7 @@ IP.1 = 127.0.0.1
 IP.2 = ::1
 "@
 
-    $confFile = Join-Path -Path $path -ChildPath "localhost.conf"
+    $confFile = Join-Path -Path $Path -ChildPath "localhost.conf"
 
     try {
         $confContent | Out-File -FilePath $confFile -Encoding UTF8
@@ -45,12 +44,17 @@ IP.2 = ::1
 
 function create-localhost-cert {
     param (
+        [string]$Path = ".",
         [string]$Name = "cert",
         [string]$Key = "key",
         [switch]$Import,
         [switch]$Admin,
         [switch]$Verbose
     )
+
+    $confPath = Join-Path -Path $Path -ChildPath "localhost.conf"
+    $certPath = Join-Path -Path $Path -ChildPath "$Name.pem"
+    $keyPath = Join-Path -Path $Path -ChildPath "$Key.pem"
 
     Write-Host " "
 
@@ -67,7 +71,7 @@ function create-localhost-cert {
 
     # Generate a self-signed certificate for localhost 
     Write-Host "Generating certificate and key files..." -NoNewLine
-    openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout "$Key.pem" -out "$Name.pem" -config localhost.conf -extensions v3_req 2>&1 | Out-Null
+    openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout "$keyPath" -out "$certPath" -config "$confPath" -extensions v3_req 2>&1 | Out-Null
 
     if ($LASTEXITCODE -ne 0) {
         Write-Host "Failed" -ForegroundColor Red
@@ -92,7 +96,7 @@ function create-localhost-cert {
         if ($Admin -and $currentUserIsAdmin) {
             # Method 1: Using Import-Certificate cmdlet for system store
             Write-Host "Importing to system certificate store using Import-Certificate..." -ForegroundColor Yellow
-            Import-Certificate -FilePath "$Name.pem" -CertStoreLocation Cert:\LocalMachine\Root -Verbose:$Verbose
+            Import-Certificate -FilePath "$certPath" -CertStoreLocation Cert:\LocalMachine\Root -Verbose:$Verbose
             Write-Host "Certificate imported successfully to system Trusted Root Certification Authorities." -ForegroundColor Green
             
         } elseif ($Admin -and -not $currentUserIsAdmin) {
