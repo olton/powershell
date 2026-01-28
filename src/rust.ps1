@@ -1,5 +1,5 @@
 # Enable rust in linux
-if ($IsLinux -and Test-Path "$HOME/.cargo/env") {
+if ($IsLinux -and (Test-Path "$HOME/.cargo/env")) {
     $cargoEnv = bash -c "source $HOME/.cargo/env && env"
     $cargoEnv | ForEach-Object {
         if ($_ -match "^PATH=(.*)$") {
