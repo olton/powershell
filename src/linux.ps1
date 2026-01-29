@@ -10,50 +10,96 @@ function search {
     param (
         [string]$Path = ".",
         [Parameter(Mandatory, HelpMessage = "Введіть назву файлу або її частину")]
-        [string]$File
+        [string]$File,
+        [int]$Depth = 0  # 0 = без обмежень
     )
-    Get-ChildItem -Path $Path -Recurse -Force -Include "*$File*" -ErrorAction SilentlyContinue
+    
+    if (-not (Test-Path $Path)) {
+        Write-Warning "Шлях '$Path' не існує"
+        return
+    }
+    
+    $params = @{
+        Path = $Path
+        Recurse = $true
+        Force = $true
+        File = $true
+        Filter = "*$File*"
+        ErrorAction = 'SilentlyContinue'
+    }
+    
+    # Додаємо обмеження глибини якщо вказано
+    if ($Depth -gt 0) {
+        $params.Depth = $Depth
+    }
+    
+    Get-ChildItem @params | Select-Object -ExpandProperty FullName
 }
 
 function ls { 
     param (
         [string]$Path = ".",
         [string]$Pattern = "*",
-        [switch]$R
+        [switch]$C
     )
 
-    Get-ChildItem -Name -Path $Path -Filter $Pattern -ErrorAction SilentlyContinue | ForEach-Object {
-        $item = Get-Item -Path (Join-Path -Path $Path -ChildPath $_) -ErrorAction SilentlyContinue
-        if ($item) {
-            $isDir = $item.PSIsContainer
-            $color = if ($isDir) { "Cyan" } else { "White" }
-            Write-Host "$_ " -ForegroundColor $color -NoNewLine:(-not $R)
+    Write-Host " "
+    Write-Host "Listing items..."
+    Write-Host " "
+
+    # Check if Terminal-Icons is available
+    if (Get-Module -Name Terminal-Icons) {
+        # Use Get-ChildItem with Format-TerminalIcons for icon support
+        Get-ChildItem -Path $Path -Filter "*$Pattern*" -ErrorAction SilentlyContinue | 
+        Format-TerminalIcons | 
+        ForEach-Object {
+            if ($C) {
+                Write-Host $_ 
+            } else {
+                Write-Host "$_ " -NoNewLine
+            }
+        }
+    } else {
+        # Fallback to your original implementation
+        Get-ChildItem -Name -Path $Path -Filter "*$Pattern*" -ErrorAction SilentlyContinue | 
+        ForEach-Object {
+            $item = Get-Item -Path (Join-Path -Path $Path -ChildPath $_) -ErrorAction SilentlyContinue
+            if ($item) {
+                $isDir = $item.PSIsContainer
+                $color = if ($isDir) { "White" } else { "Cyan" }
+                Write-Host "$_ " -ForegroundColor $color -NoNewLine:(-not $C)
+            }
         }
     }
+
+    if (-not $C) {
+        Write-Host ""
+    }
+    Write-Host " "
 }
 
 function la { 
     param (
         [string]$Path = ".", 
-        [string]$Pattern
+        [string]$Pattern = "*"
     )
-    Get-ChildItem -Path $Path -Filter $Pattern -ErrorAction SilentlyContinue
+    Get-ChildItem -Path $Path -Filter "*$Pattern*" -ErrorAction SilentlyContinue
 }
 
 function lf { 
     param (
         [string]$Path = ".", 
-        [string]$Pattern
+        [string]$Pattern = "*"
     )
-    Get-ChildItem -Path $Path -Filter $Pattern -Force -ErrorAction SilentlyContinue
+    Get-ChildItem -Path $Path -Filter "*$Pattern*" -Force -ErrorAction SilentlyContinue
 }
 
 function lr { 
     param (
         [string]$Path = ".", 
-        [string]$Pattern
+        [string]$Pattern = "*"
     )
-    Get-ChildItem -Path $Path -Filter $Pattern -Force -Recurse -ErrorAction SilentlyContinue
+    Get-ChildItem -Path $Path -Filter "*$Pattern*" -Force -Recurse -ErrorAction SilentlyContinue
 }
 
 function tail {
