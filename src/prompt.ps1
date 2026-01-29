@@ -5,9 +5,13 @@ $Env:SHOW_PROMPT_TIME = "NO"
 function prompt {
     $uptime = Get-Uptime -ErrorAction SilentlyContinue
     $username = $env:USERNAME + ":"
-    $currentBranch = git rev-parse --abbrev-ref HEAD
+    $currentBranch = current
     $folder = Split-Path -Path (Get-Location) -Leaf
-    $nodeVersion = (node -v).Trim()
+    $nodeVersion = if (Get-Command node -ErrorAction SilentlyContinue) { 
+        (node -v).Trim() 
+    } else { 
+        $null 
+    }
     $packageJson = Test-Path package.json -PathType Leaf
     $currentTime = $(Get-Date -Format "dddd dd-MM-yyyy HH:mm")
     $currentBranchIsModified = $false
@@ -39,7 +43,7 @@ function prompt {
         }
     }
 
-    if ($packageJson) {
+    if ($packageJson -and $nodeVersion) {
         Write-Host " [👽 $nodeVersion] " -NoNewLine -ForegroundColor Green
     }
 
