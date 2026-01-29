@@ -1,3 +1,4 @@
+# Help
 function help {
     param (
         [switch]$Git,
@@ -66,20 +67,40 @@ function help {
 
     if ($Linux -or $All -or $none) {
         Write-Host "Linux-style File Operations:" -ForegroundColor Green
-        Write-Host "  ls [path] [pattern]         - List directory contents"
-        Write-Host "  la [path] [pattern]         - List all files"
-        Write-Host "  lf [path] [pattern]         - List all files including hidden"
-        Write-Host "  lr [path] [pattern]         - List files recursively"
-        Write-Host "  pwd                         - Show current directory"
-        Write-Host "  cat <file>                  - Display file contents"
-        Write-Host "  touch <path>                - Create new file"
-        Write-Host "  tail <file> [-Lines n] [-F] - Show last n lines of file"
-        Write-Host "  grep <pattern> [file]       - Search for pattern in file or input"
-        Write-Host "  rn <path> <newName>         - Rename file or directory"
-        Write-Host "  du [directory]              - Show disk usage"
-        Write-Host "  df [path] [-H|-K|-M|-T]     - Show disk free space"
-        Write-Host "  search <path> <file>        - Search for files recursively"
-        Write-Host "  which                       - Alias for search"
+        Write-Host "  ls [path] [pattern] [-C]     - List directory contents"
+        Write-Host "  la [path] [pattern]          - List all files"
+        Write-Host "  lf [path] [pattern]          - List all files including hidden"
+        Write-Host "  lr [path] [pattern]          - List files recursively"
+        Write-Host "  pwd                          - Show current directory"
+        Write-Host "  cat <file>                   - Display file contents"
+        Write-Host "  touch <path>                 - Create new file"
+        Write-Host "  tail <file> [-Lines n] [-F]  - Show last n lines of file"
+        Write-Host "  rn <path> <newName>          - Rename file or directory"
+        Write-Host "  du [directory] [-K|-M]       - Show disk usage"
+        Write-Host "  df [path] [-H|-K|-M|-T]      - Show disk free space"
+        Write-Host "  search <path> <file>         - Search for files recursively"
+        Write-Host "  which                        - Alias for search"
+        Write-Host ""
+        
+        Write-Host "Enhanced grep Function:" -ForegroundColor Green
+        Write-Host "  grep <pattern> [file]        - Search for pattern in file or pipeline input"
+        Write-Host "    -IgnoreCase                - Ignore case when searching"
+        Write-Host "    -CaseSensitive             - Force case-sensitive search"
+        Write-Host "    -Regex                     - Use regular expressions"
+        Write-Host "    -Invert                    - Show non-matching lines"
+        Write-Host "    -Count                     - Count matching lines"
+        Write-Host "    -LineNumber                - Show line numbers"
+        Write-Host "    -Context <n>               - Show n lines around matches"
+        Write-Host "    -Quiet                     - Return boolean (true if found)"
+        Write-Host "    -Recurse                   - Search in directories recursively"
+        Write-Host "    -Include <patterns>        - Include files matching pattern"
+        Write-Host "    -Exclude <patterns>        - Exclude files matching pattern"
+        Write-Host ""
+        Write-Host "  Examples:"
+        Write-Host "    cat file.txt | grep 'error'"
+        Write-Host "    grep 'function' script.ps1 -LineNumber"
+        Write-Host "    grep 'TODO' -Where . -Recurse -Include '*.ps1'"
+        Write-Host "    Get-Process | grep 'chrome' -Count"
         Write-Host ""
     }
 
@@ -98,6 +119,12 @@ function help {
         Write-Host "Certificate Functions:" -ForegroundColor Cyan
         Write-Host "  get-localhost-conf [path]    - Create localhost.conf for SSL certificates"
         Write-Host "  create-localhost-cert [options] - Create self-signed localhost certificate"
+        Write-Host "    -Path <path>               - Directory for certificate files"
+        Write-Host "    -Name <name>               - Certificate file name (default: cert)"
+        Write-Host "    -Key <name>                - Private key file name (default: key)"
+        Write-Host "    -Import                    - Import certificate to store"
+        Write-Host "    -Admin                     - Import to system store (requires admin)"
+        Write-Host "    -Verbose                   - Show detailed output"
         Write-Host ""
     }
 
@@ -119,6 +146,15 @@ function help {
         
         Write-Host "Additional Tools:" -ForegroundColor Yellow
         Write-Host "  nvm                          - Node Version Manager (Linux only)"
+        Write-Host ""
+        
+        Write-Host "Custom Prompt Features:" -ForegroundColor Yellow
+        Write-Host "  🫀 Username                  - Current user"
+        Write-Host "  📂 Folder                    - Current directory"
+        Write-Host "  🌵 Git Branch                - Current git branch with modification status"
+        Write-Host "  👽 Node Version              - Node.js version (if package.json exists)"
+        Write-Host "  💻 Uptime                    - System uptime (if SHOW_PROMPT_TIME=YES)"
+        Write-Host "  ⌚ Date/Time                 - Current date and time (if SHOW_PROMPT_TIME=YES)"
         Write-Host ""
     }
 
