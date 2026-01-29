@@ -1,14 +1,15 @@
-# Help
 function help {
     param (
         [switch]$Git,
         [switch]$Linux,
         [switch]$Binder,
         [switch]$Utils,
-        [switch]$Vars
+        [switch]$Vars,
+        [switch]$Certs,
+        [switch]$All
     )
 
-    $none = -not ($Git -or $Linux -or $Binder -or $All)
+    $none = -not ($Git -or $Linux -or $Binder -or $Utils -or $Vars -or $Certs -or $All)
 
     Write-Host ""
     Write-Host "=== Pimenov's PowerShell Extensions ===" -ForegroundColor Cyan
@@ -18,7 +19,7 @@ function help {
         Write-Host "Git Helper Functions:" -ForegroundColor Yellow
         Write-Host "  init                         - Initialize git repository"
         Write-Host "  status                       - Show git status"
-        Write-Host "  add [file]                   - Add files to staging (default: all files)"
+        Write-Host "  add <file>                   - Add files to staging"
         Write-Host "  branch                       - List branches"
         Write-Host "  diff                         - Show git diff"
         Write-Host "  pull                         - Pull from remote"
@@ -28,6 +29,8 @@ function help {
         Write-Host "  reset                        - Reset changes"
         Write-Host "  reset-hard                   - Hard reset to HEAD"
         Write-Host "  unindex <name>               - Remove file from index"
+        Write-Host "  clear-index                  - Remove all files from index"
+        Write-Host "  current [-Verbose]           - Get current branch name"
         Write-Host "  fetch                        - Fetch all remotes"
         Write-Host "  fetch-remote [remote]        - Fetch specific remote (default: origin)"
         Write-Host "  fetch-prune [remote]         - Fetch and prune remote (default: origin)"
@@ -37,14 +40,15 @@ function help {
         Write-Host "  checkout <branch>            - Checkout branch with smart search"
         Write-Host "  list <pattern>               - Search for local branches matching pattern"
         Write-Host "  list-remote <pattern>        - Search for remote branches matching pattern"
-        Write-Host "  new <name> [from]            - Create new branch (default from: master)"
-        Write-Host "  rename <old> <new>           - Rename branch"
+        Write-Host "  create <type> <name> [from]  - Create new branch (default from: master)"
+        Write-Host "  rename <newName> [oldName]   - Rename branch"
         Write-Host "  exists <name> [remote]       - Check if branch exists"
         Write-Host "  merge <branch> [-Verbose]    - Merge source branch into target"
-        Write-Host "  clone <repo> <target>        - Clone repository"
+        Write-Host "  clone <repo> <target> [depth] - Clone repository"
+        Write-Host "  clone-one <repo> <target>    - Clone repository with depth 1"
         Write-Host "  check [remote]               - Check if remote is reachable (default: origin)"
         Write-Host "  update [branch]              - Pull changes for current or update from specified branch"
-        Write-Host "  upstream <branch>            - Set upstream for branch"
+        Write-Host "  upstream <branch> [origin]   - Set upstream for branch"
         Write-Host "  commit [message]             - Add all and commit with message"
         Write-Host "  push <message> [remote]      - Commit and push changes to remote (default: origin)"
         Write-Host "  restore-from <name> [source] - Restore files (default source: master)"
@@ -69,39 +73,55 @@ function help {
         Write-Host "  pwd                         - Show current directory"
         Write-Host "  cat <file>                  - Display file contents"
         Write-Host "  touch <path>                - Create new file"
-        Write-Host "  tail <file> [-Lines n] [-f] - Show last n lines of file"
+        Write-Host "  tail <file> [-Lines n] [-F] - Show last n lines of file"
         Write-Host "  grep <pattern> [file]       - Search for pattern in file or input"
         Write-Host "  rn <path> <newName>         - Rename file or directory"
         Write-Host "  du [directory]              - Show disk usage"
-        Write-Host "  df [path] [-h|-k|-m]        - Show disk free space"
+        Write-Host "  df [path] [-H|-K|-M|-T]     - Show disk free space"
         Write-Host "  search <path> <file>        - Search for files recursively"
-        Write-Host "  which <path> <file>         - Alias for search"
+        Write-Host "  which                       - Alias for search"
         Write-Host ""
     }
 
     if ($Utils -or $All -or $none) {
         Write-Host "Utility Functions:" -ForegroundColor Magenta
-        Write-Host "  clear                   - Clear screen"
-        Write-Host "  markdown <path>         - Display markdown file"
-        Write-Host "  notepad <file>          - Open file in Notepad++"
+        Write-Host "  clear                        - Clear screen"
+        Write-Host "  markdown <path>              - Display markdown file"
+        Write-Host "  notepad <file>               - Open file in Notepad++"
+        Write-Host "  errors [count]               - Show last n errors (default: 5)"
+        Write-Host "  last-error                   - Show details of last error"
+        Write-Host "  extract-vscode-extensions [file] [-Install] [-Linux] - Export VS Code extensions"
+        Write-Host ""
+    }
+
+    if ($Certs -or $All -or $none) {
+        Write-Host "Certificate Functions:" -ForegroundColor Cyan
+        Write-Host "  get-localhost-conf [path]    - Create localhost.conf for SSL certificates"
+        Write-Host "  create-localhost-cert [options] - Create self-signed localhost certificate"
         Write-Host ""
     }
 
     if ($Binder -or $All -or $none) {
         Write-Host "Binder Project Functions:" -ForegroundColor Blue
-        Write-Host "  b-clean                 - Clean binder project"
-        Write-Host "  b-init-front            - Initialize frontend sources"
-        Write-Host "  b-init-back             - Initialize backend sources"
-        Write-Host "  b-init-all              - Initialize all sources"
-        Write-Host "  b-init-remote           - Initialize remote sources"
-        Write-Host "  b-install               - Install binder project"
+        Write-Host "  b-clean                      - Clean binder project"
+        Write-Host "  b-init-front                 - Initialize frontend sources"
+        Write-Host "  b-init-back                  - Initialize backend sources"
+        Write-Host "  b-init-all                   - Initialize all sources"
+        Write-Host "  b-init-remote                - Initialize remote sources"
+        Write-Host "  b-install                    - Install binder project"
         Write-Host ""
     }
 
     if ($Vars -or $All -or $none) {
         Write-Host "Environment Variables:" -ForegroundColor Cyan
-        Write-Host "  SHOW_PROMPT_TIME        - Set to 'YES' to show time and uptime in prompt"
+        Write-Host "  SHOW_PROMPT_TIME             - Set to 'YES' to show time and uptime in prompt"
+        Write-Host ""
+        
+        Write-Host "Additional Tools:" -ForegroundColor Yellow
+        Write-Host "  nvm                          - Node Version Manager (Linux only)"
         Write-Host ""
     }
-}
 
+    Write-Host "Usage: help [-Git] [-Linux] [-Utils] [-Certs] [-Binder] [-Vars] [-All]" -ForegroundColor Gray
+    Write-Host ""
+}
