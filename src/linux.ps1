@@ -120,37 +120,202 @@ function clear { cls }
 
 function grep {
     param(
-        [Parameter(Mandatory, HelpMessage = "Введіть строку для пошуку")]
+        [Parameter(Mandatory, Position=0, HelpMessage = "Введіть строку для пошуку")]
         [string]$Search,
-        [string]$Where
+        
+        [Parameter(Position=1)]
+        [string]$Where,
+        
+        [Parameter(ValueFromPipeline = $true)]
+        [object]$InputObject,
+        
+        [switch]$IgnoreCase,
+        [switch]$CaseSensitive,
+        [switch]$Regex,
+        [switch]$Invert,
+        [switch]$Count,
+        [switch]$LineNumber,
+        [int]$Context = 0,
+        [switch]$Quiet,
+        [switch]$Recurse,
+        [string[]]$Include,
+        [string[]]$Exclude
     )
 
-    $content = if ($Where) {
-        Get-Content $Where
-    } else {
-        $input
+    begin {
+        # Ініціалізуємо масив для збору даних з pipeline
+        $pipelineInput = @()
     }
-    
-    $content | Select-String -Pattern $Search
+
+    process {
+        # Збираємо всі об'єкти з pipeline
+        if ($InputObject -ne $null) {
+            $pipelineInput += $InputObject
+        }
+    }
+
+    end {
+        # Визначаємо джерело контенту
+        if ($Where) {
+            # Перевіряємо чи це файл або директорія
+            if (Test-Path $Where -PathType Container) {
+                # Пошук у директорії
+                $searchParams = @{
+                    Path = $Where
+                    Pattern = $Search
+                    SimpleMatch = !$Regex
+                }
+                
+                if ($Recurse) { $searchParams.Recurse = $true }
+                if ($Include) { $searchParams.Include = $Include }
+                if ($Exclude) { $searchParams.Exclude = $Exclude }
+                if ($CaseSensitive) { $searchParams.CaseSensitive = $true }
+                elseif ($IgnoreCase) { $searchParams.CaseSensitive = $false }
+                if ($Context -gt 0) { $searchParams.Context = $Context, $Context }
+                if ($Invert) { $searchParams.NotMatch = $true }
+                
+                $results = Select-String @searchParams
+            }
+            elseif (Test-Path $Where -PathType Leaf) {
+                # Пошук у файлі
+                $searchParams = @{
+                    Path = $Where
+                    Pattern = $Search
+                    SimpleMatch = !$Regex
+                }
+                
+                if ($CaseSensitive) { $searchParams.CaseSensitive = $true }
+                elseif ($IgnoreCase) { $searchParams.CaseSensitive = $false }
+                if ($Context -gt 0) { $searchParams.Context = $Context, $Context }
+                if ($Invert) { $searchParams.NotMatch = $true }
+                
+                $results = Select-String @searchParams
+            }
+            else {
+                Write-Error "Файл або директорія '$Where' не знайдена"
+                return
+            }
+        }
+        else {
+            # Працюємо з pipeline input
+            if ($pipelineInput.Count -eq 0) {
+                Write-Warning "Немає вхідних даних для пошуку"
+                return
+            }
+            
+            $searchParams = @{
+                Pattern = $Search
+                SimpleMatch = !$Regex
+            }
+            
+            if ($CaseSensitive) { $searchParams.CaseSensitive = $true }
+            elseif ($IgnoreCase) { $searchParams.CaseSensitive = $false }
+            if ($Context -gt 0) { $searchParams.Context = $Context, $Context }
+            if ($Invert) { $searchParams.NotMatch = $true }
+            
+            # Конвертуємо input в рядки якщо потрібно
+            $stringInput = $pipelineInput | ForEach-Object {
+                if ($_ -is [string]) {
+                    $_
+                } else {
+                    $_.ToString()
+                }
+            }
+            
+            $results = $stringInput | Select-String @searchParams
+        }
+
+        # Обробка результатів
+        if ($Count) {
+            return ($results | Measure-Object).Count
+        }
+        
+        if ($Quiet) {
+            return ($results.Count -gt 0)
+        }
+        
+        if ($LineNumber -and $results) {
+            $results | ForEach-Object {
+                if ($_.Filename) {
+                    Write-Host "$($_.Filename):$($_.LineNumber):" -NoNewline -ForegroundColor Yellow
+                } else {
+                    Write-Host "$($_.LineNumber):" -NoNewline -ForegroundColor Yellow
+                }
+                Write-Host " $($_.Line)"
+            }
+        } else {
+            $results
+        }
+    }
 }
 
+# Disk usage
 function du {
     param(
-        [string]$Directory
+        [string]$Directory,
+        [switch]$K,
+        [switch]$M
     ) 
 
     $dir = $Directory ? $Directory : (Get-Location).Path
 
+    Write-Host ""
     Write-Host "Calculating disk usage for directory: $dir..." -ForegroundColor Cyan
 
-    Get-ChildItem $dir -ErrorAction SilentlyContinue | 
-    % { $f = $_ ; 
-        Get-ChildItem -r $_.FullName -ErrorAction SilentlyContinue | 
-        Measure-Object -property length -sum | 			
-            select @{Name="Name";Expression={$f}},@{Name="Sum (Mb)"; Expression={"{0:N1}" -f ($_.sum / 1MB)}}} |
-    Format-Table Name, @{Label="Sum (Mb)"; Expression={$_."Sum (Mb)"}; Align="Right"} -AutoSize
+    # Визначаємо одиниці вимірювання
+    $unit = if ($K) { 
+        "KB" 
+    } elseif ($M) { 
+        "MB" 
+    } else { 
+        "B" 
+    }
+
+    $divisor = switch ($unit) {
+        "KB" { 1KB }
+        "MB" { 1MB }
+        default { 1 }
+    }
+
+    # Оптимізована версія - обчислюємо розмір за один прохід
+    $results = Get-ChildItem $dir -ErrorAction SilentlyContinue | ForEach-Object -Parallel {
+        $folder = $_
+        $using_divisor = $using:divisor
+        $using_unit = $using:unit
+        
+        try {
+            $size = (Get-ChildItem -Path $folder.FullName -Recurse -File -ErrorAction SilentlyContinue | 
+                    Measure-Object -Property Length -Sum).Sum
+            
+            $formattedSize = if ($using_unit -eq "B") {
+                "{0}" -f $size
+            } else {
+                "{0:N1}" -f ($size / $using_divisor)
+            }
+            
+            [PSCustomObject]@{
+                Name = $folder.Name
+                "Size ($using_unit)" = $formattedSize
+                SizeBytes = $size
+            }
+        }
+        catch {
+            [PSCustomObject]@{
+                Name = $folder.Name
+                "Size ($using_unit)" = "Error"
+                SizeBytes = 0
+            }
+        }
+    } -ThrottleLimit 8
+
+    # Сортуємо по розміру (найбільші спочатку) та виводимо
+    $results | Sort-Object SizeBytes -Descending | 
+    Format-Table Name, @{Label="Size ($unit)"; Expression={$_."Size ($unit)"}; Align="Right"} -AutoSize
+
+    Write-Host ""
 }
 
+# Disk free space
 function df {
     param(
         [string]$Path,
