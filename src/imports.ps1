@@ -14,7 +14,7 @@ if (Get-Module -ListAvailable -Name PSReadLine) {
     
     # Увімкнення автодоповнення команд
     Set-PSReadLineOption -PredictionSource History
-    Set-PSReadLineOption -PredictionViewStyle InlineView
+    Set-PSReadLineOption -PredictionViewStyle ListView
     Set-PSReadLineOption -EditMode Windows
     
     # Клавіші для навігації по пропозиціях
