@@ -14,7 +14,16 @@ if (Get-Module -ListAvailable -Name PSReadLine) {
     
     # Увімкнення автодоповнення команд
     Set-PSReadLineOption -PredictionSource History
-    Set-PSReadLineOption -PredictionViewStyle ListView
+    
+    # Налаштування стилю відображення через змінну середовища
+    # Можливі значення: InlineView, ListView
+    $predictionViewStyle = if ($env:PREDICTION_VIEW_STYLE) { 
+        $env:PREDICTION_VIEW_STYLE 
+    } else { 
+        "InlineView" 
+    }
+    Set-PSReadLineOption -PredictionViewStyle $predictionViewStyle
+    
     Set-PSReadLineOption -EditMode Windows
     
     # Клавіші для навігації по пропозиціях
