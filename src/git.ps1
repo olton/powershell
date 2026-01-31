@@ -1,42 +1,87 @@
 # Git helper functions
-function init { git init }
+function init { 
+    param (
+        [string]$Branch = "main",
+        [string]$Template = "",
+        [string]$Directory = ""
+    )
+
+    $template = $([string]::IsNullOrEmpty($Template) ? "" : "--template=$Template")
+    $directory = $([string]::IsNullOrEmpty($Directory) ? "" : $Directory)
+
+    Write-Host " "
+    Write-Host "Initializing new git repository with initial branch '$Branch'..." -NoNewLine
+    $null = git init --initial-branch=$Branch  $template $directory  
+    Write-Host "OK" -ForegroundColor Green
+    Write-Host " "
+}
+
 function status { git status }
+
 function add { 
     param (
-        [Parameter(Mandatory, HelpMessage = "Введіть шлях до файлу(ів)")]
-        [string]$File
+        [string]$File = "."
     )
-    git add $File 
+    Write-Host " "
+    Write-Host "Adding file(s) to staging area..." -NoNewLine
+    $null = git add $File 
+    Write-Host "OK" -ForegroundColor Green
+    Write-Host " "
 }
+
 function branch { git branch }
 function diff { git diff }
 function pull { git pull }
+
 function del-branch { 
     param (
         [Parameter(Mandatory, HelpMessage = "Введіть назву гілки")]
         [string]$Branch
     )
-    git branch -D $Branch 
+    Write-Host " "
+    Write-Host "Deleting local branch '$Branch'..." -NoNewLine
+    $null = git branch -D $Branch 
+    Write-Host "OK" -ForegroundColor Green
+    Write-Host " "
 }
+
 function del-remote { 
     param (
         [Parameter(Mandatory, HelpMessage = "Введіть назву гілки")]
         [string]$Branch,
         [string]$Remote = "origin"
     )
-    git push $Remote --delete $Branch 
+    Write-Host " "
+    Write-Host "Deleting remote branch '$Branch' from remote '$Remote'..." -NoNewLine
+    $null = git push $Remote --delete $Branch 
+    Write-Host "OK" -ForegroundColor Green
+    Write-Host " "
 }
+
 function clean { git clean -fd }
 function reset { git reset }
 function reset-hard { git reset --hard HEAD}
+
 function unindex { 
     param (
         [Parameter(Mandatory, HelpMessage = "Введіть шлях до файлу(ів)")]
         [string]$Name
     )
+    Write-Host " "
+    Write-Host "Removing file(s) from index (staging area)..." -NoNewLine
     git rm -rf --cached $Name 
+    Write-Host "OK" -ForegroundColor Green
+    Write-Host " "
 }
-function clear-index { git rm --cached -r . -f }
+
+function clear-index { 
+    Write-Host " "
+    Write-Host "Clearing entire index (staging area)..." -NoNewLine
+    $null = git rm --cached -r . -f 
+    Write-Host "OK" -ForegroundColor Green
+    Write-Host " "
+}
+
 function current {
     param (
         [switch]$Verbose
@@ -53,23 +98,54 @@ function current {
     return $currentBranch
 }
 
-function fetch { git fetch --all }
+function fetch { 
+    Write-Host " "
+    Write-Host "Fetching all remotes..." -NoNewLine
+    $null =git fetch --all 
+    Write-Host "OK" -ForegroundColor Green
+    Write-Host " "
+}
+
 function fetch-remote { 
     param (
         [string]$Remote = "origin"
     )
 
-    git fetch $Remote
+    Write-Host " "
+    Write-Host "Fetching from remote '$Remote'..." -NoNewLine
+    $null = git fetch $Remote
+    Write-Host "OK" -ForegroundColor Green
+    Write-Host " "
 }
+
 function fetch-prune { 
     param (
         [string]$Remote = "origin"
     )
 
-    git fetch $Remote --prune
+    Write-Host " "
+    Write-Host "Fetching from remote '$Remote' with prune..." -NoNewLine
+    $null = git fetch $Remote --prune
+    Write-Host "OK" -ForegroundColor Green
+    Write-Host " "
 }
-function fetch-prune-tags { git fetch --all --prune-tags }
-function fetch-prune-all { git fetch --all --prune --prune-tags }
+
+function fetch-prune-tags { 
+    Write-Host " "
+    Write-Host "Fetching all remotes with prune tags..." -NoNewLine
+    $null = git fetch --all --prune-tags 
+    Write-Host "OK" -ForegroundColor Green
+    Write-Host " "
+}
+
+function fetch-prune-all { 
+    Write-Host " "
+    Write-Host "Fetching all remotes with prune and prune tags..." -NoNewLine
+    $null = git fetch --all --prune --prune-tags 
+    Write-Host "OK" -ForegroundColor Green
+    Write-Host " "
+}
+
 function fetch-branch {
     param (
         [Parameter(Mandatory, HelpMessage = "Введіть назву гілки")]
@@ -85,7 +161,7 @@ function fetch-branch {
     }
 
     Write-Host "Fetching branch '$Branch' from remote '$Remote'..." -ForegroundColor Cyan
-    git fetch $Remote $Branch
+    $null = git fetch $Remote $Branch
     Write-Host "Fetch completed." -ForegroundColor Green
     Write-Host " "
     return
