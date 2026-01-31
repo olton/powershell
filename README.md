@@ -13,6 +13,11 @@ Perfect for automation, everyday tasks, and users who want a uniquely tailored s
 In this example:
 - Git commands
 - Linux commands
+- Create valid SSL certificate for localhost
+- Support nvm, rust in linux
 - Custom prompt
+- Using additional modules: Prediction, Terminal Icons
+- Export VSCode extensions
+- Help function
 
 Please **star** the project if you like it.
