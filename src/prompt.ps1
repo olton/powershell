@@ -3,6 +3,17 @@
 $Env:SHOW_PROMPT_TIME = "NO"
 
 function prompt {
+    $isAdmin = $false
+    if ($IsWindows -or $PSVersionTable.PSEdition -eq 'Desktop') {
+        $isAdmin = ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator")
+    } elseif ($IsLinux -or $IsMacOS) {
+        $isAdmin = (whoami) -eq 'root' -or (id -u) -eq 0
+    }
+    
+    if ($isAdmin) {
+        Write-Host "⚠️  You are running PowerShell as Administrator!" -ForegroundColor Red
+    }
+    
     $uptime = Get-Uptime -ErrorAction SilentlyContinue
     $username = $env:USERNAME + ":"
     $currentBranch = current
