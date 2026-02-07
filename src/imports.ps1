@@ -29,5 +29,6 @@ if (Get-Module -ListAvailable -Name PSReadLine) {
     # Клавіші для навігації по пропозиціях
     Set-PSReadLineKeyHandler -Key "Ctrl+f" -Function ForwardWord
     Set-PSReadLineKeyHandler -Key "Ctrl+RightArrow" -Function AcceptNextSuggestionWord
-    Set-PSReadLineKeyHandler -Key "RightArrow" -Function AcceptSuggestion
+    Set-PSReadLineKeyHandler -Key RightArrow -Function ForwardChar
+    Set-PSReadLineKeyHandler -Key Tab -Function Complete
 }
