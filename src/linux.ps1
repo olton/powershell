@@ -155,9 +155,6 @@ function grep {
     }
 
     end {
-        # Явно конвертуємо параметр пошуку в рядок для уникнення інтерпретації як шляху
-        $Search = [string]$Search
-        
         # Визначаємо джерело контенту
         if ($Where) {
             # Перевіряємо чи це файл або директорія
@@ -384,22 +381,6 @@ function df {
     }
 
     $results | Format-Table -AutoSize
-}
-
-function Format-Size {
-    param([long]$Bytes)
-    
-    if ($Bytes -ge 1TB) {
-        return "{0:F1} TB" -f ($Bytes / 1TB)
-    } elseif ($Bytes -ge 1GB) {
-        return "{0:F1} GB" -f ($Bytes / 1GB)
-    } elseif ($Bytes -ge 1MB) {
-        return "{0:F1} MB" -f ($Bytes / 1MB)
-    } elseif ($Bytes -ge 1KB) {
-        return "{0:F1} KB" -f ($Bytes / 1KB)
-    } else {
-        return "{0} B" -f $Bytes
-    }
 }
 
 function rn {
