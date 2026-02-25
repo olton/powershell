@@ -48,6 +48,7 @@ function help {
         Write-Host "  clone <repo> <target> [depth] - Clone repository"
         Write-Host "  clone-one <repo> <target>    - Clone repository with depth 1"
         Write-Host "  check [remote]               - Check if remote is reachable (default: origin)"
+        Write-Host "  has-changes                  - Check if working tree has uncommitted changes (internal)"
         Write-Host "  update [branch]              - Pull changes for current or update from specified branch"
         Write-Host "  upstream <branch> [origin]   - Set upstream for branch"
         Write-Host "  commit [message]             - Add all and commit with message"
@@ -111,13 +112,15 @@ function help {
         Write-Host "  notepad <file>               - Open file in Notepad++"
         Write-Host "  errors [count]               - Show last n errors (default: 5)"
         Write-Host "  last-error                   - Show details of last error"
+        Write-Host "  Format-Size <bytes>          - Convert bytes to readable size (internal)"
+        Write-Host "  help [switches]              - Show this help"
         Write-Host "  extract-vscode-extensions [file] [-Install] [-Linux] - Export VS Code extensions"
         Write-Host ""
     }
 
     if ($Certs -or $All -or $none) {
         Write-Host "Certificate Functions:" -ForegroundColor Cyan
-        Write-Host "  get-localhost-conf [path]    - Create localhost.conf for SSL certificates"
+        Write-Host "  create-localhost-conf [path]    - Create localhost.conf for SSL certificates"
         Write-Host "  create-localhost-cert [options] - Create self-signed localhost certificate"
         Write-Host "    -Path <path>               - Directory for certificate files"
         Write-Host "    -Name <name>               - Certificate file name (default: cert)"
@@ -129,7 +132,7 @@ function help {
     }
 
     if ($Binder -or $All -or $none) {
-        Write-Host "Binder Project Functions:" -ForegroundColor Blue
+        Write-Host "Binder Project Functions (maven):" -ForegroundColor Blue
         Write-Host "  b-clean                      - Clean binder project"
         Write-Host "  b-init-front                 - Initialize frontend sources"
         Write-Host "  b-init-back                  - Initialize backend sources"
@@ -145,7 +148,9 @@ function help {
         Write-Host ""
         
         Write-Host "Additional Tools:" -ForegroundColor Yellow
-        Write-Host "  nvm                          - Node Version Manager (Linux only)"
+        Write-Host "  nvm                          - Node Version Manager wrapper (Windows/Linux/macOS)"
+        Write-Host "  Initialize-NvmPath           - Initialize NVM-related PATH variables (internal)"
+        Write-Host "  prompt                       - Custom shell prompt function"
         Write-Host ""
         
         Write-Host "Custom Prompt Features:" -ForegroundColor Yellow
