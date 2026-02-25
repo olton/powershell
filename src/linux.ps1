@@ -114,8 +114,20 @@ function tail {
 }
 
 function pwd { Get-Location }
-function cat($file){ Get-Content $file }
-function touch($path){ New-Item -Path $path -ItemType File }
+function cat { 
+    param (
+        [Parameter(Mandatory, HelpMessage = "Введіть шлях до файлу")]
+        [string]$file
+    )
+    Get-Content $file 
+}
+function touch { 
+    param (
+        [Parameter(Mandatory, HelpMessage = "Введіть шлях до файлу")]
+        [string]$Path
+    )
+    New-Item -Path $Path -ItemType File 
+}
 function clear { cls }
 
 function grep {
