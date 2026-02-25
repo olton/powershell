@@ -1,5 +1,5 @@
 # Certificates
-function get-localhost-conf {
+function create-localhost-conf {
     param (
         [string]$Path = "."
     )
@@ -67,7 +67,7 @@ function create-localhost-cert {
 
     # Create localhost.conf
     if (-not (Test-Path -Path "./localhost.conf")) {
-        get-localhost-conf
+        create-localhost-conf
     }
 
     # Generate a self-signed certificate for localhost 
