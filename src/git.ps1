@@ -562,16 +562,6 @@ function feature {
         [string]$From = "master"
     )
 
-    create -Type "new" -Name $Name -From $From
-}
-
-function feature { 
-    param (
-        [Parameter(Mandatory, HelpMessage = "Введіть назву гілки")]
-        [string]$Name,
-        [string]$From = "master"
-    )
-
     create -Type "feature" -Name $Name -From $From
 }
 
