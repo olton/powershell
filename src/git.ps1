@@ -91,7 +91,7 @@ function fetch-branch {
     return
 }
 
-function list {
+function list-local {
     param (
         [Parameter(Mandatory, HelpMessage = "Введіть назву гілки, або її частину")]
         [string]$Branch
@@ -599,7 +599,7 @@ function merge {
     param (
         [Parameter(Mandatory, HelpMessage = "Введіть назву гілки яку потрібно злити в поточну")]
         [string]$Branch,
-        [switch]$Verbose
+        [switch]$D
     )
 
     if (has-changes) {
@@ -625,7 +625,7 @@ function merge {
     }
 
     Write-Host "Merging $Branch into current." -ForegroundColor Cyan
-    if ($Verbose) {
+    if ($D) {
         git merge $Branch --verbose
     } else {
         git merge $Branch

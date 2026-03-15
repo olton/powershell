@@ -37,7 +37,7 @@ function prompt {
     Write-Host "📂 $folder " -NoNewLine -ForegroundColor Green
 
     if ($currentBranch) {
-        Write-Host "🌵 $currentBranch" -NoNewLine -ForegroundColor White
+        Write-Host "🌵 git:$currentBranch" -NoNewLine -ForegroundColor White
         if ($currentBranchIsModified) {
             Write-Host " [M:$countModifiedFiles]" -NoNewLine -ForegroundColor Red
         }
