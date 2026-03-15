@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "Custom functions for PowerShell",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "build": "pwsh -NoProfile -ExecutionPolicy Bypass -File ./build.ps1"
   },
   "repository": {
     "type": "git",
