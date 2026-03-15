@@ -12,6 +12,11 @@ function prompt {
     } else { 
         $null 
     }
+    $gitVersion = if (Get-Command git -ErrorAction SilentlyContinue) { 
+        (git --version).Trim() 
+    } else { 
+        $null 
+    }
     $packageJson = Test-Path package.json -PathType Leaf
     $currentTime = $(Get-Date -Format "dddd dd-MM-yyyy HH:mm")
     $currentBranchIsModified = $false
@@ -20,7 +25,7 @@ function prompt {
     $countModifiedFiles = (git status -s | Measure-Object -Line).Lines
     $modifiedInfo = git diff --shortstat
 
-    if ($gitStatus -and $gitStatus.Trim()) {
+    if ($gitVersion -and $gitStatus -and $gitStatus.Trim()) {
         $currentBranchIsModified = $true
     }
 
