@@ -218,48 +218,14 @@ function checkout {
     $branchExists = git branch --list $Branch
 
     if (-not $branchExists -or $branchExists.Trim() -eq '') {
-        Write-Host "Branch '$Branch' does not exist locally. Searching for similar branches..." -ForegroundColor Magenta
-        $matchingBranches = @(git branch --list "*$Branch*" | ForEach-Object { $_.Trim().TrimStart('* ') } | Where-Object { $_ -ne '' })
-        
-        if ($matchingBranches.Count -eq 1) {
-            Write-Host "Found one matching branch. Checking out..." -ForegroundColor Magenta
-            $Branch = $matchingBranches[0]
-            git checkout $Branch 
-            Write-Host "Switched to branch '$Branch'." -ForegroundColor Green
-            Write-Host " "
-            return
-        } elseif ($matchingBranches.Count -gt 1) {
-            Write-Host "Found multiple branches matching '$Branch':" -ForegroundColor Yellow
-            Write-Host " "
-            $matchingBranches | ForEach-Object {
-                Write-Host "checkout $_" -ForegroundColor Cyan
-            }
-            Write-Host " "
-            return
-        } else {
-            Write-Host "Branch '$Branch' does not exist locally. Fetching from remote..." -ForegroundColor Cyan
-            if (check -ne 0) {
-                Write-Host "Remote is not reachable. Cannot fetch branch." -ForegroundColor Red
-                return
-            }
-            Write-Host "Fetching branch info from remote..." -ForegroundColor Cyan
-            git fetch origin
-            git checkout $Branch
-            if ($LASTEXITCODE -ne 0) {
-                Write-Host "Branch '$Branch' does not exist on remote either." -ForegroundColor Red
-                Write-Host " "
-                return
-            }
-            Write-Host "Switched to branch '$Branch'." -ForegroundColor Green
-            Write-Host " "
-            return
-        }
+        Write-Host "Branch '$Branch' does not exist! Creating new..." -ForegroundColor Magenta
+        git checkout -b $Branch 
     } else {
         git checkout $Branch 
-        Write-Host "Switched to branch '$Branch'." -ForegroundColor Green
-        Write-Host " "
-        return
     }   
+    Write-Host "Switched to branch '$Branch'." -ForegroundColor Green
+    Write-Host " "
+    return
 }
 
 # Update function to pull latest changes from a specified branch and merge into current branch
