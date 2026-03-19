@@ -399,25 +399,28 @@ function push {
         return
     }
 
-    # Check for incoming changes from remote
-    Write-Host "Checking for incoming changes from remote '$Remote'..." -ForegroundColor Cyan
-    $branchName = current
-    git fetch $Remote $branchName 2>&1 | Out-Null
-    
-    $incomingChanges = @(git log ..@{u} --oneline 2>&1 | Where-Object { $_ -and $_ -notmatch "fatal|error" })
-    
-    if ($incomingChanges.Count -gt 0 -and -not $Force) {
-        Write-Host " "
-        Write-Host "⚠️  There are incoming changes on '$Remote/$branchName' that need to be pulled." -ForegroundColor Yellow
-        Write-Host "Please pull the latest changes before pushing:" -ForegroundColor Yellow
-        Write-Host "  pull" -ForegroundColor Cyan
-        Write-Host " "
-        Write-Host "Or use -Force parameter to push anyway (not recommended):" -ForegroundColor Yellow
-        Write-Host "  push -Message '$Message' -Force" -ForegroundColor Cyan
-        Write-Host " "
-        return
-    }
+	# Перевірка на вхідні зміни (чи потрібно pull)
+    Write-Host "Checking incoming changes for '$Remote/$branchName'..." -ForegroundColor Cyan
+    $remoteBranchExists = (git ls-remote --heads $Remote $branchName)
 
+    if ($remoteBranchExists -and $remoteBranchExists.Trim()) {
+        git fetch $Remote $branchName --quiet 2>$null
+
+        $counts = git rev-list --left-right --count "HEAD...$Remote/$branchName" 2>$null
+        if ($LASTEXITCODE -eq 0 -and $counts) {
+            $parts = $counts.Trim() -split '\s+'
+            $ahead = [int]$parts[0]
+            $behind = [int]$parts[1]
+
+            if ($behind -gt 0 -and -not $Force) {
+                Write-Host "⚠️  Your branch is behind '$Remote/$branchName' by $behind commit(s)." -ForegroundColor Yellow
+                Write-Host "Run pull first, then push." -ForegroundColor Yellow
+                Write-Host "Use -Force to skip this check (not recommended)." -ForegroundColor Yellow
+                Write-Host " "
+                return
+            }
+        }
+    }
     if ($Simple) {
         Write-Host "Using only push command..." -ForegroundColor Yellow
         git push
