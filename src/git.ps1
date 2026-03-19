@@ -382,7 +382,8 @@ function push {
     param (
         [string]$Message,
         [string]$Remote = "origin",
-        [switch]$Simple
+        [switch]$Simple,
+        [switch]$Force
     )
 
     Write-Host " "
@@ -394,6 +395,25 @@ function push {
     if (check $Remote -ne 0) {
         Write-Host " "
         Write-Host "Cannot push, because remote '$Remote' is not reachable." -ForegroundColor Red
+        Write-Host " "
+        return
+    }
+
+    # Check for incoming changes from remote
+    Write-Host "Checking for incoming changes from remote '$Remote'..." -ForegroundColor Cyan
+    $branchName = current
+    git fetch $Remote $branchName 2>&1 | Out-Null
+    
+    $incomingChanges = @(git log ..@{u} --oneline 2>&1 | Where-Object { $_ -and $_ -notmatch "fatal|error" })
+    
+    if ($incomingChanges.Count -gt 0 -and -not $Force) {
+        Write-Host " "
+        Write-Host "⚠️  There are incoming changes on '$Remote/$branchName' that need to be pulled." -ForegroundColor Yellow
+        Write-Host "Please pull the latest changes before pushing:" -ForegroundColor Yellow
+        Write-Host "  pull" -ForegroundColor Cyan
+        Write-Host " "
+        Write-Host "Or use -Force parameter to push anyway (not recommended):" -ForegroundColor Yellow
+        Write-Host "  push -Message '$Message' -Force" -ForegroundColor Cyan
         Write-Host " "
         return
     }
@@ -439,7 +459,6 @@ function push {
     Write-Host " "   
     return
 }
-
 function log { 
     param (
         [int]$Deep = 1
