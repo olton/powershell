@@ -219,7 +219,7 @@ function checkout {
     $localBranchExists = git branch --list -- $Branch
 
     if ($localBranchExists -and $localBranchExists.Trim() -ne '') {
-        git checkout -- $Branch
+        git checkout $Branch
     } else {
         $remoteBranchExists = git branch -r --list "$Remote/$Branch"
 
