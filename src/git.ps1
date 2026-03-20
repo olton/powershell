@@ -202,7 +202,8 @@ function has-changes {
 function checkout { 
     param (
         [Parameter(Mandatory, HelpMessage = "Введіть назву гілки")]
-        [string]$Branch
+        [string]$Branch,
+        [string]$Remote = "origin"
     )
 
     if (has-changes) {
@@ -215,14 +216,28 @@ function checkout {
 
     Write-Host " "
     Write-Host "Checking out branch '$Branch'..." -ForegroundColor Cyan
-    $branchExists = git branch --list $Branch
+    $localBranchExists = git branch --list -- $Branch
 
-    if (-not $branchExists -or $branchExists.Trim() -eq '') {
-        Write-Host "Branch '$Branch' does not exist! Creating new..." -ForegroundColor Magenta
-        git checkout -b $Branch 
+    if ($localBranchExists -and $localBranchExists.Trim() -ne '') {
+        git checkout -- $Branch
     } else {
-        git checkout $Branch 
-    }   
+        $remoteBranchExists = git branch -r --list "$Remote/$Branch"
+
+        if ($remoteBranchExists -and $remoteBranchExists.Trim() -ne '') {
+            Write-Host "Local branch '$Branch' not found. Creating tracking branch from '$Remote/$Branch'..." -ForegroundColor Magenta
+            git checkout -b $Branch --track "$Remote/$Branch"
+        } else {
+            Write-Host "Branch '$Branch' does not exist locally or on '$Remote'. Creating new local branch..." -ForegroundColor Magenta
+            git checkout -b $Branch
+        }
+    }
+
+    if ($LASTEXITCODE -ne 0) {
+        Write-Host "Failed to switch to branch '$Branch'." -ForegroundColor Red
+        Write-Host " "
+        return
+    }
+
     Write-Host "Switched to branch '$Branch'." -ForegroundColor Green
     Write-Host " "
     return
